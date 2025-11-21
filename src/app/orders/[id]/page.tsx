@@ -9,6 +9,8 @@ import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { CostingForm } from "@/components/orders/costing-form";
 import { TNAForm } from "@/components/orders/tna-form";
+import { FabricBooking } from "@/components/orders/fabric-booking";
+import { ProductionLog } from "@/components/orders/production-log";
 
 // --- HELPER: Status Badge (Reused) ---
 const getStatusBadge = (status: string) => {
@@ -33,7 +35,13 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
         buyer: true,
         costing: true,     // Needed for Tab 2
         timeAction: true,  // Needed for Tab 3 (NEW)
+        fabricBookings: true,
+        productionLogs: true,
     },
+  });
+
+  const factories = await db.factory.findMany({
+      orderBy: { name: 'asc' }
   });
 
   if (!order) return notFound();
@@ -85,7 +93,6 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
           <TabsTrigger value="tna">T&A Plan</TabsTrigger>
           <TabsTrigger value="fabric">Fabric Booking</TabsTrigger>
           <TabsTrigger value="production">Production</TabsTrigger>
-          <TabsTrigger value="commercial">Commercial Docs</TabsTrigger>
         </TabsList>
 
         {/* --- TAB 1: OVERVIEW --- */}
@@ -167,6 +174,25 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
         {/* --- TAB 3: T&A --- */}
         <TabsContent value="tna">
             <TNAForm orderId={order.id} initialData={order.timeAction} />
+        </TabsContent>
+
+        {/* --- TAB 4: FABRIC BOOKING --- */}
+        <TabsContent value="fabric">
+            <FabricBooking 
+                orderId={order.id} 
+                orderQty={order.orderQty} 
+                bookings={order.fabricBookings}
+                factories={factories}
+            />
+        </TabsContent>
+
+        {/* --- TAB 5: PRODUCTION --- */}
+        <TabsContent value="production">
+            <ProductionLog 
+                orderId={order.id} 
+                orderQty={order.orderQty} 
+                logs={order.productionLogs}
+            />
         </TabsContent>
 
       </Tabs>

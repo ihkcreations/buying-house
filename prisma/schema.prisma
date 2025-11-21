@@ -73,6 +73,7 @@ model Order {
   // Commercial
   proformaInvoice ProformaInvoice?
   salesContract   SalesContract?
+  commercialDocs  CommercialDoc[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -213,4 +214,18 @@ model SalesContract {
   
   scNumber  String
   scDate    DateTime
+}
+
+// --- 10. COMMERCIAL DOCUMENTS ---
+model CommercialDoc {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  name      String   // "L/C", "Bill of Lading"
+  type      String   // "UPLOADED"
+  url       String   // File URL
+  status    String   // "PENDING", "COMPLETED"
+  
+  createdAt DateTime @default(now())
 }
