@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useSession, signOut } from "@/lib/auth-client"; // Import Better Auth hooks
 import {
   LayoutDashboard,
   ClipboardList,
@@ -15,7 +16,8 @@ import {
   PlusCircle,
   FileText,
   Factory,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  Loader2
 } from "lucide-react";
 import {
   Accordion,
@@ -26,26 +28,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// This defines your navigation structure
+// --- 1. DEFINE ALL NAVIGATION ITEMS ---
 const sidebarNav = [
   {
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
     type: "link",
+    roles: ["admin", "merchandiser", "commercial", "finance"]
   },
   {
     title: "Activity Log",
     href: "/activity-log",
     icon: ClipboardList,
     type: "link",
+    roles: ["admin", "merchandiser", "commercial", "finance"]
   },
   {
     title: "Merchandiser",
     icon: Store,
     type: "accordion",
+    roles: ["admin", "merchandiser"], // Only Admin & Merch see this
     items: [
-      { title: "Create New Order", href: "/orders/new", icon: PlusCircle, variant: "primary" }, // The Blue Button
+      { title: "Create New Order", href: "/orders/new", icon: PlusCircle, variant: "primary" },
       { title: "Ongoing Order", href: "/orders/ongoing", icon: ClipboardList },
       { title: "Manage Documents", href: "/orders/documents", icon: FileText },
       { title: "All Orders", href: "/orders/all", icon: LayoutDashboard },
@@ -55,6 +60,7 @@ const sidebarNav = [
     title: "Commercial",
     icon: Briefcase,
     type: "accordion",
+    roles: ["admin", "commercial"], // Only Admin & Commercial see this
     items: [
       { title: "Ongoing Order", href: "/commercial/ongoing", icon: ClipboardList },
       { title: "Manage Documents", href: "/commercial/documents", icon: FileText },
@@ -62,28 +68,53 @@ const sidebarNav = [
     ],
   },
   {
-    title: "User Management", // Renamed from 'Operator'
-    icon: Users,
-    type: "accordion",
-    items: [
-      { title: "Create User", href: "/users/create", icon: PlusCircle },
-      { title: "Manage Users", href: "/users", icon: Users },
-    ],
-  },
-  {
     title: "Finance",
     icon: DollarSign,
     type: "accordion",
+    roles: ["admin", "finance"], // Only Admin & Finance see this
     items: [
       { title: "Expense Entry", href: "/finance/expense", icon: PlusCircle },
       { title: "Approve Expense", href: "/finance/approve", icon: FileText },
       { title: "Business Overview", href: "/finance/overview", icon: LayoutDashboard },
     ],
   },
+  {
+    title: "User Management",
+    icon: Users,
+    type: "accordion",
+    roles: ["admin"], // Only Admin see this
+    items: [
+      { title: "Create User", href: "/users/create", icon: PlusCircle },
+      { title: "Manage Users", href: "/users", icon: Users },
+    ],
+  },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  
+  // --- 2. GET USER SESSION ---
+  const { data: session, isPending } = useSession();
+  
+  // If checking auth state, you might want to show a loader or nothing
+  // We default to 'guest' if no user found
+  const userRole = (session?.user as any)?.role || "guest";
+
+  // --- 3. LOGOUT HANDLER ---
+  const handleLogout = async () => {
+      await signOut();
+      router.push("/login"); // Redirect to login after sign out
+  };
+
+  // --- 4. FILTER MENU BASED ON ROLE ---
+  const filteredNav = sidebarNav.filter(item => {
+      // If items define roles, check if user has permission
+      if (item.roles) {
+          return item.roles.includes(userRole);
+      }
+      return true; // If no roles defined, show to everyone
+  });
 
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-white text-slate-900">
@@ -97,94 +128,109 @@ export function AppSidebar() {
 
       {/* Scrollable Menu */}
       <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-1">
-          {sidebarNav.map((item, index) => {
-            if (item.type === "link") {
-              const isActive = pathname === item.href;
-              return (
-                <Link key={index} href={item.href}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 mb-1",
-                      isActive && "bg-slate-100 font-semibold text-blue-700"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.title}
-                  </Button>
-                </Link>
-              );
-            }
+        {isPending ? (
+            <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+        ) : (
+            <nav className="space-y-1">
+            {filteredNav.map((item, index) => {
+                if (item.type === "link") {
+                const isActive = pathname === item.href;
+                return (
+                    <Link key={index} href={item.href}>
+                    <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className={cn(
+                        "w-full justify-start gap-3 mb-1",
+                        isActive && "bg-slate-100 font-semibold text-blue-700"
+                        )}
+                    >
+                        <item.icon className="h-4 w-4" />
+                        {item.title}
+                    </Button>
+                    </Link>
+                );
+                }
 
-            return (
-              <Accordion key={index} type="single" collapsible className="w-full">
-                <AccordionItem value={item.title} className="border-none">
-                  <AccordionTrigger className="py-2 px-4 hover:bg-slate-50 rounded-md hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pl-4 pt-1 pb-2">
-                    <div className="flex flex-col space-y-1 border-l-2 border-slate-100 pl-2">
-                      {item.items?.map((subItem, subIndex) => {
-                        // Special styling for "Create New Order" button
-                        if (subItem.variant === "primary") {
-                          return (
+                return (
+                <Accordion key={index} type="single" collapsible className="w-full">
+                    <AccordionItem value={item.title} className="border-none">
+                    <AccordionTrigger className="py-2 px-4 hover:bg-slate-50 rounded-md hover:no-underline">
+                        <div className="flex items-center gap-3">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pl-4 pt-1 pb-2">
+                        <div className="flex flex-col space-y-1 border-l-2 border-slate-100 pl-2">
+                        {item.items?.map((subItem, subIndex) => {
+                            // Special styling for "Create New Order" button
+                            if (subItem.variant === "primary") {
+                            return (
+                                <Link key={subIndex} href={subItem.href}>
+                                <Button className="w-full justify-start gap-2 bg-blue-600 hover:bg-blue-700 text-white mb-2 shadow-sm">
+                                    <subItem.icon className="h-4 w-4" />
+                                    {subItem.title}
+                                </Button>
+                                </Link>
+                            );
+                            }
+                            return (
                             <Link key={subIndex} href={subItem.href}>
-                              <Button className="w-full justify-start gap-2 bg-blue-600 hover:bg-blue-700 text-white mb-2 shadow-sm">
+                                <Button
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start gap-2 h-9 font-normal text-slate-600",
+                                    pathname === subItem.href && "bg-blue-50 text-blue-700 font-medium"
+                                )}
+                                >
                                 <subItem.icon className="h-4 w-4" />
                                 {subItem.title}
-                              </Button>
+                                </Button>
                             </Link>
-                          );
-                        }
-                        return (
-                          <Link key={subIndex} href={subItem.href}>
-                            <Button
-                              variant="ghost"
-                              className={cn(
-                                "w-full justify-start gap-2 h-9 font-normal text-slate-600",
-                                pathname === subItem.href && "bg-blue-50 text-blue-700 font-medium"
-                              )}
-                            >
-                              <subItem.icon className="h-4 w-4" />
-                              {subItem.title}
-                            </Button>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            );
-          })}
-        </nav>
+                            );
+                        })}
+                        </div>
+                    </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+                );
+            })}
+            </nav>
+        )}
       </ScrollArea>
 
-      {/* Bottom Master Settings */}
+      {/* Bottom Master Settings (Restricted to Admin) */}
       <div className="border-t p-3 space-y-1">
-        <Link href="/admin/buyers">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
-            <Users className="h-4 w-4" />
-            Manage Buyers
-          </Button>
-        </Link>
-        <Link href="/admin/factories">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
-            <Factory className="h-4 w-4" />
-            Manage Factories
-          </Button>
-        </Link>
-        <Link href="/settings">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
-            <Settings className="h-4 w-4" />
-            Account Settings
-          </Button>
-        </Link>
-        <Button variant="ghost" className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50">
+        {userRole === "admin" && (
+            <>
+                <Link href="/admin/buyers">
+                <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
+                    <Users className="h-4 w-4" />
+                    Manage Buyers
+                </Button>
+                </Link>
+                <Link href="/admin/factories">
+                <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
+                    <Factory className="h-4 w-4" />
+                    Manage Factories
+                </Button>
+                </Link>
+                <Link href="/settings">
+                <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
+                    <Settings className="h-4 w-4" />
+                    Account Settings
+                </Button>
+                </Link>
+            </>
+        )}
+        
+        <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+        >
           <LogOut className="h-4 w-4" />
           Logout
         </Button>

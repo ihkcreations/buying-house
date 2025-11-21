@@ -9,14 +9,19 @@ datasource db {
 
 // --- 1. USER MANAGEMENT ---
 model User {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  email    String @unique
-  name     String
-  password String // You will handle hashing with BetterAuth
-  role     Role   @default(MERCHANDISER)
+  id            String    @id @map("_id") // Removed @db.ObjectId and @default(auto())
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  role          String?   @default("merchandiser")
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user") // Optional: good practice for mongo
 }
 
 enum Role {
@@ -228,4 +233,50 @@ model CommercialDoc {
   status    String   // "PENDING", "COMPLETED"
   
   createdAt DateTime @default(now())
+}
+
+
+// --- BETTER AUTH MODELS ---
+
+model Session {
+  id        String   @id @map("_id") // Removed @db.ObjectId
+  userId    String   // Removed @db.ObjectId (Must match User.id type)
+  token     String
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime
+  updatedAt DateTime
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id           String    @id @map("_id") // Removed @db.ObjectId
+  userId       String    // Removed @db.ObjectId
+  accountId    String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime
+  updatedAt    DateTime
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @map("_id") // Removed @db.ObjectId
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
 }
