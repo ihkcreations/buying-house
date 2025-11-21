@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// --- 1. USER MANAGEMENT ---
+model User {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  email    String @unique
+  name     String
+  password String // You will handle hashing with BetterAuth
+  role     Role   @default(MERCHANDISER)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MERCHANDISER
+  COMMERCIAL
+  FINANCE
+}
+
+// --- 2. MASTER DATA (The "Library") ---
+model Buyer {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  country String
+  orders  Order[]
+}
+
+model Factory {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  address String
+}
+
+// --- 3. THE ORDER (The Heart) ---
+model Order {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderNo     String   @unique // #139679
+  styleNo     String
+  season      String
+  
+  // Relationships
+  buyerId     String   @db.ObjectId
+  buyer       Buyer    @relation(fields: [buyerId], references: [id])
+  
+  // Merchandising Core
+  orderQty    Int
+  unitPrice   Float    // FOB
+  totalValue  Float    // Auto-calculated (Qty * Price)
+  currency    String   @default("USD")
+
+  // THE MATRIX (Solves your Figma "List vs Matrix" issue)
+  // Data Structure: [{ color: "Red", sizes: { S: 10, M: 20, L: 10 } }]
+  sizeColorMap Json    
+
+  status      OrderStatus @default(PENDING)
+  
+  // Modules
+  costing         Costing?
+  timeAction      TimeAction?
+  fabricBookings  FabricBooking[]
+  samples         Sample[]
+  productionLogs  ProductionLog[]
+  
+  // Commercial
+  proformaInvoice ProformaInvoice?
+  salesContract   SalesContract?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  COSTING_APPROVED
+  FABRIC_BOOKED
+  IN_PRODUCTION
+  SHIPPED
+  CLOSED
+}
+
+// --- 4. COSTING MODULE ---
+model Costing {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @unique @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  // Components
+  fabricCostPerDzn  Float
+  trimsCostPerDzn   Float
+  cmCostPerDzn      Float
+  commercialCost    Float // Added this based on our review
+  logisticsCost     Float // Added this based on our review
+  
+  netFob            Float
+  margin            Float
+  
+  isApproved        Boolean @default(false) // Admin control
+}
+
+// --- 5. T&A MODULE ---
+model TimeAction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @unique @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  // Milestones (Plan vs Actual)
+  labDipPlan      DateTime?
+  labDipActual    DateTime?
+  
+  fabricPlan      DateTime?
+  fabricActual    DateTime? // Critical: Fabric In-house
+  
+  cuttingPlan     DateTime?
+  cuttingActual   DateTime?
+  
+  sewingPlan      DateTime?
+  sewingActual    DateTime?
+  
+  shipmentPlan    DateTime
+  shipmentActual  DateTime?
+}
+
+// --- 6. FABRIC BOOKING ---
+model FabricBooking {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  fabricName   String // "100% Cotton Jersey"
+  yarnCount    String // "26/1 Combed" (Added based on review)
+  consumption  Float  // The magic number
+  wastage      Float  // 5%
+  
+  requiredQty  Float
+  bookedQty    Float
+  
+  supplier     String?
+}
+
+// --- 7. SAMPLE MODULE ---
+model Sample {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  type      SampleType // PROTO, FIT, PP
+  version   Int        // 1, 2, 3 (To track resubmissions)
+  
+  sentDate  DateTime?
+  courier   String?    // DHL/FedEx
+  trackingNo String?   // Added based on review
+  
+  status    SampleStatus @default(PENDING)
+  comments  String?
+}
+
+enum SampleType {
+  PROTO
+  FIT
+  PP
+  TOP
+}
+
+enum SampleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RESUBMIT
+}
+
+// --- 8. PRODUCTION LOG ---
+model ProductionLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  date      DateTime
+  
+  // Daily Input
+  cutQty    Int @default(0)
+  sewQty    Int @default(0)
+  packQty   Int @default(0)
+  
+  reportUrl String? // UploadThing URL
+}
+
+// --- 9. COMMERCIAL ---
+model ProformaInvoice {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @unique @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  piNumber  String
+  date      DateTime
+  bankDetails String
+  
+  items     Json // [{ desc: "T-Shirt", hsCode: "6109.10", qty: 5000, rate: 5 }]
+}
+
+model SalesContract {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @unique @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  scNumber  String
+  scDate    DateTime
+}
