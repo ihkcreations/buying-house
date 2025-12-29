@@ -1,7 +1,10 @@
 import { db } from "@/lib/db";
 import { OrderForm } from "./order-form";
+import { protectPage } from "@/lib/protect";
 
 export default async function NewOrderPage() {
+  await protectPage(["merchandiser"]); 
+  
   // Fetch Buyers for the dropdown
   const buyers = await db.buyer.findMany({
     orderBy: { name: "asc" },

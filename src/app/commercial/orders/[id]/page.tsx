@@ -7,9 +7,14 @@ import Link from "next/link";
 import { PIGenerator } from "@/components/commercial/pi-generator";
 import { SCGenerator } from "@/components/commercial/sc-generator"; // Import
 import { DocManager } from "@/components/commercial/doc-manager";   // Import
+import { protectPage } from "@/lib/protect";
+import { getCompanySettings } from "@/app/actions/settings";
 
 export default async function CommercialOrderPage({ params }: { params: { id: string } }) {
+  await protectPage(["commercial"]);
+  
   const { id } = await params;
+  const settings = await getCompanySettings();
 
   // Fetch ALL commercial relations
   const order = await db.order.findUnique({
@@ -47,7 +52,7 @@ export default async function CommercialOrderPage({ params }: { params: { id: st
 
         {/* Tab 1: PI */}
         <TabsContent value="pi">
-            <PIGenerator order={order} existingPI={order.proformaInvoice} />
+            <PIGenerator order={order} existingPI={order.proformaInvoice} settings={settings}/>
         </TabsContent>
 
         {/* Tab 2: SC */}

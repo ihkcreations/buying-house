@@ -2,17 +2,32 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  // We need to check for the session cookie
-  // Better Auth uses "better-auth.session_token"
+  const path = request.nextUrl.pathname;
+  
+  // Check for the specific session cookie used by Better Auth
   const sessionCookie = request.cookies.get("better-auth.session_token");
-  const isAuthPage = request.nextUrl.pathname.startsWith("/login");
+  
+  // Define public paths that don't require authentication
+  const isAuthPage = path === "/login" || path === "/signup";
+  
+  // 1. ROOT PATH HANDLING (/)
+  // If user visits domain.com/, decide where to send them
+  if (path === "/") {
+    if (sessionCookie) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
 
-  // 1. If trying to access App without login -> Redirect to Login
+  // 2. PROTECTED ROUTES (Everything else)
+  // If trying to access app without a cookie -> Kick to Login
   if (!sessionCookie && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 2. If logged in and trying to access Login -> Redirect to Dashboard
+  // 3. AUTH PAGES (Login/Signup)
+  // If already logged in -> Kick to Dashboard (Don't let them see login again)
   if (sessionCookie && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -22,7 +37,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Protect all routes except api, static files, etc.
+    // Apply to all routes EXCEPT api, static files, images, favicon
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

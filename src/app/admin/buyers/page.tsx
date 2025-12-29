@@ -1,7 +1,10 @@
 import { db } from "@/lib/db";
 import { BuyerClient } from "./client"; // We will make this next
+import { protectPage } from "@/lib/protect";
 
 export default async function ManageBuyersPage() {
+  await protectPage(["admin"]);
+  
   // Fetch data on the server
   const buyers = await db.buyer.findMany({
     orderBy: { name: "asc" },

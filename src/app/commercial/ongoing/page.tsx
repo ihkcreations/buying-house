@@ -8,7 +8,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 
+import { protectPage } from "@/lib/protect";
+
 export default async function CommercialDashboard() {
+  await protectPage(["commercial"]); 
+  
   // Fetch orders, but we might want to filter only those "Ready for Commercial"
   // e.g., where Status is NOT "PENDING"
   const orders = await db.order.findMany({

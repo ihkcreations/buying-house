@@ -280,3 +280,28 @@ model Verification {
 
   @@map("verification")
 }
+
+// --- 11. GLOBAL SETTINGS ---
+model CompanySettings {
+  id        String   @id @map("_id") 
+  // We will always use the ID "main_settings" to keep it unique
+  
+  // Tab 1: General
+  companyName    String   @default("P.I. OCEAN TEX")
+  companyAddress String   @default("Dhaka, Bangladesh")
+  contactPhone   String?
+  contactEmail   String?
+  
+  // Tab 2: Banking (The Advising Bank)
+  bankName       String?
+  bankAddress    String?
+  swiftCode      String?
+  accountNumber  String?
+  accountName    String?  // Beneficiary Name
+  
+  // Tab 3: Defaults
+  defaultPaymentTerms String?
+  defaultPort         String?
+  
+  updatedAt DateTime @updatedAt
+}

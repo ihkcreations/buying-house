@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useSession, signOut } from "@/lib/auth-client"; // Import Better Auth hooks
+import { useSession, signOut } from "@/lib/auth-client";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// --- 1. DEFINE ALL NAVIGATION ITEMS ---
+// --- NAVIGATION CONFIGURATION ---
 const sidebarNav = [
   {
     title: "Dashboard",
@@ -48,7 +48,7 @@ const sidebarNav = [
     title: "Merchandiser",
     icon: Store,
     type: "accordion",
-    roles: ["admin", "merchandiser"], // Only Admin & Merch see this
+    roles: ["admin", "merchandiser"],
     items: [
       { title: "Create New Order", href: "/orders/new", icon: PlusCircle, variant: "primary" },
       { title: "Ongoing Order", href: "/orders/ongoing", icon: ClipboardList },
@@ -60,7 +60,7 @@ const sidebarNav = [
     title: "Commercial",
     icon: Briefcase,
     type: "accordion",
-    roles: ["admin", "commercial"], // Only Admin & Commercial see this
+    roles: ["admin", "commercial"],
     items: [
       { title: "Ongoing Order", href: "/commercial/ongoing", icon: ClipboardList },
       { title: "Manage Documents", href: "/commercial/documents", icon: FileText },
@@ -71,54 +71,43 @@ const sidebarNav = [
     title: "Finance",
     icon: DollarSign,
     type: "accordion",
-    roles: ["admin", "finance"], // Only Admin & Finance see this
+    roles: ["admin", "finance"],
     items: [
       { title: "Expense Entry", href: "/finance/expense", icon: PlusCircle },
       { title: "Approve Expense", href: "/finance/approve", icon: FileText },
       { title: "Business Overview", href: "/finance/overview", icon: LayoutDashboard },
     ],
   },
+  // --- UPDATED: User Management is now a direct link ---
   {
     title: "User Management",
+    href: "/users", // Direct link to the page
     icon: Users,
-    type: "accordion",
-    roles: ["admin"], // Only Admin see this
-    items: [
-      { title: "Create User", href: "/users/create", icon: PlusCircle },
-      { title: "Manage Users", href: "/users", icon: Users },
-    ],
+    type: "link",   // Changed from 'accordion'
+    roles: ["admin"],
   },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  
-  // --- 2. GET USER SESSION ---
   const { data: session, isPending } = useSession();
-  
-  // If checking auth state, you might want to show a loader or nothing
-  // We default to 'guest' if no user found
   const userRole = (session?.user as any)?.role || "guest";
 
-  // --- 3. LOGOUT HANDLER ---
   const handleLogout = async () => {
       await signOut();
-      router.push("/login"); // Redirect to login after sign out
+      router.push("/login");
   };
 
-  // --- 4. FILTER MENU BASED ON ROLE ---
   const filteredNav = sidebarNav.filter(item => {
-      // If items define roles, check if user has permission
       if (item.roles) {
           return item.roles.includes(userRole);
       }
-      return true; // If no roles defined, show to everyone
+      return true;
   });
 
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-white text-slate-900">
-      {/* Logo Area */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-slate-900">
           <BriefcaseBusiness className="h-6 w-6 text-blue-600" />
@@ -126,7 +115,6 @@ export function AppSidebar() {
         </Link>
       </div>
 
-      {/* Scrollable Menu */}
       <ScrollArea className="flex-1 px-3 py-4">
         {isPending ? (
             <div className="flex justify-center py-10">
@@ -135,10 +123,11 @@ export function AppSidebar() {
         ) : (
             <nav className="space-y-1">
             {filteredNav.map((item, index) => {
+                // RENDER SIMPLE LINK
                 if (item.type === "link") {
                 const isActive = pathname === item.href;
                 return (
-                    <Link key={index} href={item.href}>
+                    <Link key={index} href={item.href!}>
                     <Button
                         variant={isActive ? "secondary" : "ghost"}
                         className={cn(
@@ -153,6 +142,7 @@ export function AppSidebar() {
                 );
                 }
 
+                // RENDER ACCORDION
                 return (
                 <Accordion key={index} type="single" collapsible className="w-full">
                     <AccordionItem value={item.title} className="border-none">
@@ -165,7 +155,6 @@ export function AppSidebar() {
                     <AccordionContent className="pl-4 pt-1 pb-2">
                         <div className="flex flex-col space-y-1 border-l-2 border-slate-100 pl-2">
                         {item.items?.map((subItem, subIndex) => {
-                            // Special styling for "Create New Order" button
                             if (subItem.variant === "primary") {
                             return (
                                 <Link key={subIndex} href={subItem.href}>
@@ -201,7 +190,6 @@ export function AppSidebar() {
         )}
       </ScrollArea>
 
-      {/* Bottom Master Settings (Restricted to Admin) */}
       <div className="border-t p-3 space-y-1">
         {userRole === "admin" && (
             <>
@@ -217,14 +205,15 @@ export function AppSidebar() {
                     Manage Factories
                 </Button>
                 </Link>
-                <Link href="/settings">
-                <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
-                    <Settings className="h-4 w-4" />
-                    Account Settings
-                </Button>
-                </Link>
             </>
         )}
+
+        <Link href="/settings">
+            <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
+                <Settings className="h-4 w-4" />
+                Account Settings
+            </Button>
+        </Link>
         
         <Button 
             variant="ghost" 
