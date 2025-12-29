@@ -9,6 +9,8 @@ import { signUp } from "@/lib/auth-client"; // We can't use client auth here dir
 
 // RECOMMENDATION: For this MVP, we will use the Client-Side Signup logic inside the Admin Panel
 // but we still need actions to DELETE and FETCH users.
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function getUsers() {
   // Only return necessary fields
@@ -28,9 +30,25 @@ export async function getUsers() {
 
 export async function deleteUser(userId: string) {
   try {
+    // 1. Get Current Admin Session
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return { error: "Unauthorized" };
+    }
+
+    // 2. SELF-DELETION CHECK
+    if (session.user.id === userId) {
+        return { error: "You cannot delete your own account." };
+    }
+
+    // 3. Proceed with delete
     await db.user.delete({
       where: { id: userId },
     });
+    
     revalidatePath("/users");
     return { success: "User deleted successfully." };
   } catch (error) {

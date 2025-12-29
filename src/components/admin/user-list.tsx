@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { deleteUser } from "@/app/actions/users";
@@ -36,6 +37,7 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = useSession();
 
   // Form State
   const [name, setName] = useState("");
@@ -154,7 +156,9 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {initialUsers.map((user) => (
+              {initialUsers.map((user) => {
+                const isCurrentUser = session?.user?.id === user.id;
+                return(
                 <TableRow key={user.id}>
                   <TableCell className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
@@ -163,8 +167,10 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
-                        <span className="text-xs text-slate-500">{user.email}</span>
+                          <span className="font-medium">
+                            {user.name} {isCurrentUser && "(You)"}
+                          </span>
+                          <span className="text-xs text-slate-500">{user.email}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -176,44 +182,47 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    
-                    {/* --- ALERT DIALOG FOR DELETE --- */}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-slate-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-                             <AlertTriangle className="h-5 w-5" /> Delete User?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete <strong>{user.name}</strong>? 
-                            This action cannot be undone and they will lose access immediately.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDelete(user.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete User
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    {/* --- END ALERT DIALOG --- */}
-
-                  </TableCell>
-                </TableRow>
-              ))}
+                    {isCurrentUser ? (
+                        <span className="text-xs text-slate-400 italic pr-2">
+                          Current User
+                        </span>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                                 <AlertTriangle className="h-5 w-5" /> Delete User?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete <strong>{user.name}</strong>? 
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(user.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete User
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
