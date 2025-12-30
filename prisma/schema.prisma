@@ -267,6 +267,23 @@ model SalesContract {
   
   scNumber  String
   scDate    DateTime
+  
+  // --- INDEPENDENT TERMS (Snapshotted from PI, editable) ---
+  payment         String?
+  blClause        String?
+  tolerance       String?
+  freightTerm     String?
+  portLoading     String?
+  partialShipment String?
+  charges         String?
+  insurance       String?
+  lcTerm1         String?
+  lcTerm2         String?
+  portDischarge   String?
+  documents       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --- 10. COMMERCIAL DOCUMENTS ---

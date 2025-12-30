@@ -5,29 +5,43 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { PIGenerator } from "@/components/commercial/pi-generator";
-import { SCGenerator } from "@/components/commercial/sc-generator"; // Import
-import { DocManager } from "@/components/commercial/doc-manager";   // Import
-import { protectPage } from "@/lib/protect";
+import { SCGenerator } from "@/components/commercial/sc-generator";
+import { DocManager } from "@/components/commercial/doc-manager";
 import { getCompanySettings } from "@/app/actions/settings";
+import { protectPage } from "@/lib/protect";
 
-export default async function CommercialOrderPage({ params }: { params: { id: string } }) {
-  await protectPage(["commercial"]);
+export default async function CommercialOrderPage({ 
+    params,
+    searchParams 
+}: { 
+    params: { id: string },
+    searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  await protectPage(["admin", "commercial"]);
   
+  // Await params (Next.js 15)
   const { id } = await params;
-  const settings = await getCompanySettings();
+  const sp = await searchParams;
 
-  // Fetch ALL commercial relations
+  // 1. Determine Active Tab (Default to 'pi')
+  const activeTab = (sp.tab as string) || "pi";
+
   const order = await db.order.findUnique({
     where: { id },
     include: { 
         buyer: true,
         proformaInvoice: true,
-        salesContract: true,   // Add this
-        commercialDocs: true,  // Add this
+        salesContract: true,
+        commercialDocs: true,
     },
   });
 
   if (!order) return notFound();
+
+  const settings = await getCompanySettings();
+
+  // Styling for Tabs
+  const tabTriggerClass = "data-[state=active]:bg-slate-100 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded-md px-4 py-2 transition-all";
 
   return (
     <div className="space-y-6">
@@ -43,16 +57,32 @@ export default async function CommercialOrderPage({ params }: { params: { id: st
           </div>
       </div>
 
-      <Tabs defaultValue="pi" className="w-full">
-        <TabsList className="w-full justify-start h-12 bg-white border p-1 mb-6">
-          <TabsTrigger value="pi">Proforma Invoice (PI)</TabsTrigger>
-          <TabsTrigger value="sc">Sales Contract (SC)</TabsTrigger>
-          <TabsTrigger value="docs">Manage Documents</TabsTrigger>
+      <Tabs defaultValue={activeTab} className="w-full">
+        
+        {/* Navigation Bar */}
+        <TabsList className="w-full justify-start h-auto bg-white border p-1 mb-6 gap-1">
+          
+          <TabsTrigger value="pi" asChild className={tabTriggerClass}>
+            <Link href={`/commercial/orders/${id}?tab=pi`}>Proforma Invoice (PI)</Link>
+          </TabsTrigger>
+          
+          <TabsTrigger value="sc" asChild className={tabTriggerClass}>
+            <Link href={`/commercial/orders/${id}?tab=sc`}>Sales Contract (SC)</Link>
+          </TabsTrigger>
+          
+          <TabsTrigger value="docs" asChild className={tabTriggerClass}>
+            <Link href={`/commercial/orders/${id}?tab=docs`}>Manage Documents</Link>
+          </TabsTrigger>
+
         </TabsList>
 
         {/* Tab 1: PI */}
         <TabsContent value="pi">
-            <PIGenerator order={order} existingPI={order.proformaInvoice} settings={settings}/>
+            <PIGenerator 
+                order={order} 
+                existingPI={order.proformaInvoice} 
+                settings={settings}
+            />
         </TabsContent>
 
         {/* Tab 2: SC */}
@@ -60,7 +90,8 @@ export default async function CommercialOrderPage({ params }: { params: { id: st
             <SCGenerator 
                 order={order} 
                 pi={order.proformaInvoice} 
-                sc={order.salesContract} 
+                sc={order.salesContract}
+                settings={settings}
             />
         </TabsContent>
         

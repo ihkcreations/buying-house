@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Save, Printer, Building2, MapPin } from "lucide-react";
+import { Save, Printer, Building2, MapPin, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { savePI } from "@/app/actions/commercial";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,55 @@ export function PIGenerator({
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
+  // --- 1. ROW STATE MANAGEMENT ---
+  // Default first row based on Order Data
+  const initialRow = {
+      styleOrder: `${order.styleNo} / ${order.orderNo}`,
+      article: "", 
+      description: `Men's 100% Cotton Knitted ${order.styleNo}`, 
+      shippingDate: format(new Date(new Date().setDate(new Date().getDate() + 45)), "yyyy-MM-dd"), 
+      qty: order.orderQty,
+      rate: order.unitPrice,
+      amount: order.totalValue
+  };
+
+  // Load existing rows or start with one default row
+  const [rows, setRows] = useState<any[]>(
+      existingPI?.items && existingPI.items.length > 0 ? existingPI.items : [initialRow]
+  );
+
+  // --- ACTIONS ---
+  const addRow = () => {
+      setRows([...rows, { ...initialRow, qty: 0, amount: 0, article: "" }]); // Add empty clone
+  };
+
+  const removeRow = (index: number) => {
+      if (rows.length === 1) {
+          toast.error("PI must have at least one item.");
+          return;
+      }
+      const newRows = [...rows];
+      newRows.splice(index, 1);
+      setRows(newRows);
+  };
+
+  // Handle Input Change to update State (Critical for Math)
+  const handleRowChange = (index: number, field: string, value: string) => {
+      const newRows = [...rows];
+      newRows[index] = { ...newRows[index], [field]: value };
+      
+      // Auto-calculate Amount
+      if (field === "qty" || field === "rate") {
+          const q = parseFloat(newRows[index].qty) || 0;
+          const r = parseFloat(newRows[index].rate) || 0;
+          newRows[index].amount = q * r;
+      }
+      setRows(newRows);
+  };
+
+  // Calculate Grand Total from Rows
+  const grandTotal = rows.reduce((acc, row) => acc + (parseFloat(row.amount) || 0), 0);
+
   // --- DEFAULTS ---
   const defaultSupplierInfo = settings 
     ? `${settings.companyName}\n${settings.companyAddress}\n${settings.contactPhone || ""}`
@@ -32,20 +81,7 @@ export function PIGenerator({
     ? `${settings.bankName}\n${settings.bankAddress || ""}\nSWIFT: ${settings.swiftCode}\nA/C Name: ${settings.accountName}\nA/C No: ${settings.accountNumber}`
     : "TRUST BANK PLC\nDilkusha Corp Branch\nSWIFT: TBLBDDH";
 
-  // Existing terms from DB or defaults
-  const t = existingPI || {};
-
-  // Item Defaults
-  const defaultItems = existingPI?.items?.[0] || {
-      styleOrder: `${order.styleNo} / ${order.orderNo}`,
-      article: "", 
-      description: `Men's 100% Cotton Knitted ${order.styleNo}`, 
-      hsCode: "6109.10",
-      shippingDate: format(new Date(new Date().setDate(new Date().getDate() + 45)), "yyyy-MM-dd"), 
-      qty: order.orderQty,
-      rate: order.unitPrice,
-      amount: order.totalValue
-  };
+  const t = existingPI || {}; // Terms
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
@@ -58,7 +94,7 @@ export function PIGenerator({
   return (
     <form action={handleSubmit} className="space-y-8 pb-32">
       
-      {/* 1. HEADER INFO (Same as before) */}
+      {/* 1. HEADER INFO */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Proforma Invoice Details</CardTitle>
@@ -90,48 +126,85 @@ export function PIGenerator({
         </CardContent>
       </Card>
 
-      {/* 2. GOODS TABLE (Same as before) */}
+      {/* 2. DYNAMIC GOODS TABLE */}
       <Card>
-          <CardHeader><CardTitle>Description of Goods</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle>Description of Goods</CardTitle>
+              <Button type="button" size="sm" variant="outline" onClick={addRow} className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100">
+                  <Plus className="w-4 h-4 mr-2" /> Add Item Row
+              </Button>
+          </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
               <Table className="min-w-[1000px]">
                   <TableHeader>
                       <TableRow className="bg-slate-50">
-                          <TableHead className="w-[50px]">Sl.</TableHead>
+                          <TableHead className="w-[50px] text-center">Sl.</TableHead>
                           <TableHead className="w-[150px]">Style / Order</TableHead>
                           <TableHead className="w-[120px]">Article</TableHead>
-                          <TableHead className="w-[250px]">Description & HS Code</TableHead>
+                          <TableHead className="w-[300px]">Description</TableHead> 
                           <TableHead className="w-[130px]">Shipping Date</TableHead>
                           <TableHead className="w-[100px] text-right">Qty</TableHead>
-                          <TableHead className="w-[100px] text-right">Price</TableHead>
-                          <TableHead className="w-[120px] text-right">Amount</TableHead>
+                          <TableHead className="w-[100px] text-right">Rate</TableHead>
+                          <TableHead className="w-[120px] text-right">Total</TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
-                      <TableRow>
-                          <TableCell className="text-center">01</TableCell>
-                          <TableCell><Input name="item_style" defaultValue={defaultItems.styleOrder} className="bg-slate-50" /></TableCell>
-                          <TableCell><Input name="item_article" defaultValue={defaultItems.article} placeholder="e.g. ART-001" /></TableCell>
-                          <TableCell>
-                              <div className="space-y-2">
-                                <Textarea name="item_desc" defaultValue={defaultItems.description} className="min-h-[60px] resize-none" />
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] uppercase">HS Code:</span>
-                                    <Input name="item_hs" defaultValue={defaultItems.hsCode} className="h-7 text-xs" />
-                                </div>
-                              </div>
-                          </TableCell>
-                          <TableCell><Input type="date" name="item_shipdate" defaultValue={defaultItems.shippingDate} className="text-xs" /></TableCell>
-                          <TableCell><Input name="item_qty" defaultValue={defaultItems.qty} className="text-right bg-slate-50" readOnly /></TableCell>
-                          <TableCell><Input name="item_rate" defaultValue={defaultItems.rate} className="text-right bg-slate-50" readOnly /></TableCell>
-                          <TableCell className="text-right"><Input name="item_amount" defaultValue={defaultItems.amount} className="text-right font-bold border-none shadow-none bg-transparent" readOnly /></TableCell>
-                      </TableRow>
+                      {rows.map((row, index) => (
+                          <TableRow key={index}>
+                              <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                              
+                              <TableCell>
+                                  <Input name="item_style" value={row.styleOrder} onChange={(e) => handleRowChange(index, 'styleOrder', e.target.value)} className="bg-slate-50/50" />
+                              </TableCell>
+                              
+                              <TableCell>
+                                  <Input name="item_article" value={row.article} onChange={(e) => handleRowChange(index, 'article', e.target.value)} placeholder="ART..." />
+                              </TableCell>
+                              
+                              <TableCell>
+                                    <Textarea 
+                                        name="item_desc" 
+                                        value={row.description} 
+                                        onChange={(e) => handleRowChange(index, 'description', e.target.value)}
+                                        className="min-h-[50px] resize-none text-xs" 
+                                    />
+                              </TableCell>
+                              
+                              <TableCell>
+                                  <Input type="date" name="item_shipdate" value={row.shippingDate} onChange={(e) => handleRowChange(index, 'shippingDate', e.target.value)} className="text-xs" />
+                              </TableCell>
+                              
+                              <TableCell>
+                                  <Input type="number" name="item_qty" value={row.qty} onChange={(e) => handleRowChange(index, 'qty', e.target.value)} className="text-right" />
+                              </TableCell>
+                              
+                              <TableCell>
+                                  <Input type="number" name="item_rate" value={row.rate} onChange={(e) => handleRowChange(index, 'rate', e.target.value)} className="text-right" />
+                              </TableCell>
+                              
+                              <TableCell className="text-right font-bold">
+                                  <Input 
+                                    name="item_amount" 
+                                    value={row.amount} 
+                                    readOnly 
+                                    className="text-right font-bold border-none shadow-none bg-transparent" 
+                                  />
+                              </TableCell>
+
+                              <TableCell>
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(index)} className="text-slate-400 hover:text-red-600">
+                                      <Trash2 className="w-4 h-4" />
+                                  </Button>
+                              </TableCell>
+                          </TableRow>
+                      ))}
                   </TableBody>
               </Table>
           </CardContent>
       </Card>
 
-      {/* 3. TERMS & CONDITIONS (Updated to Exact 12 Fields) */}
+      {/* 3. TERMS & CONDITIONS */}
       <Card>
           <CardHeader><CardTitle>Terms & Conditions</CardTitle></CardHeader>
           <CardContent className="p-0">
@@ -149,85 +222,28 @@ export function PIGenerator({
                         <TableCell className="font-medium">Payment</TableCell>
                         <TableCell><Input name="term_payment" defaultValue={t.payment || settings?.defaultPaymentTerms || "Irrevocable L/C at sight"} /></TableCell>
                     </TableRow>
-                    <TableRow>
-                        <TableCell>02</TableCell>
-                        <TableCell className="font-medium">B/L Clause</TableCell>
-                        <TableCell><Input name="term_bl" defaultValue={t.blClause || "Negotiable against documents"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>03</TableCell>
-                        <TableCell className="font-medium">Tolerance</TableCell>
-                        <TableCell><Input name="term_tolerance" defaultValue={t.tolerance || "+/- 5% in Quantity and Amount"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>04</TableCell>
-                        <TableCell className="font-medium">Freight Term</TableCell>
-                        <TableCell><Input name="term_freight" defaultValue={t.freightTerm || "Freight Collect"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>05</TableCell>
-                        <TableCell className="font-medium">Port of Loading</TableCell>
-                        <TableCell><Input name="term_pol" defaultValue={t.portLoading || settings?.defaultPort || "Chittagong, Bangladesh"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>06</TableCell>
-                        <TableCell className="font-medium">Partial Shipment</TableCell>
-                        <TableCell><Input name="term_partial" defaultValue={t.partialShipment || "Allowed"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>07</TableCell>
-                        <TableCell className="font-medium">Charges</TableCell>
-                        <TableCell><Input name="term_charges" defaultValue={t.charges || "Outside Bangladesh on Applicant's account"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>08</TableCell>
-                        <TableCell className="font-medium">Insurance</TableCell>
-                        <TableCell><Input name="term_insurance" defaultValue={t.insurance || "Covered by Applicant"} /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>09</TableCell>
-                        <TableCell className="font-medium">L/C Term 1</TableCell>
-                        <TableCell><Input name="term_lc1" defaultValue={t.lcTerm1 || ""} placeholder="Specific LC Condition..." /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>10</TableCell>
-                        <TableCell className="font-medium">L/C Term 2</TableCell>
-                        <TableCell><Input name="term_lc2" defaultValue={t.lcTerm2 || ""} placeholder="Additional LC Condition..." /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>11</TableCell>
-                        <TableCell className="font-medium">Port of Discharge</TableCell>
-                        <TableCell><Input name="term_pod" defaultValue={t.portDischarge || ""} placeholder="e.g. Hamburg" /></TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>12</TableCell>
-                        <TableCell className="font-medium">Documents</TableCell>
-                        <TableCell><Input name="term_docs" defaultValue={t.documents || "Comm. Invoice, Packing List, B/L, CO, GSP"} /></TableCell>
-                    </TableRow>
+                    {/* ... (Repeat for other terms same as before) ... */}
+                    {/* Add the other 11 rows here from previous code */}
+                    <TableRow><TableCell>02</TableCell><TableCell className="font-medium">B/L Clause</TableCell><TableCell><Input name="term_bl" defaultValue={t.blClause || "Negotiable against documents"} /></TableCell></TableRow>
+                    <TableRow><TableCell>03</TableCell><TableCell className="font-medium">Tolerance</TableCell><TableCell><Input name="term_tolerance" defaultValue={t.tolerance || "+/- 5% in Quantity and Amount"} /></TableCell></TableRow>
+                    <TableRow><TableCell>04</TableCell><TableCell className="font-medium">Freight Term</TableCell><TableCell><Input name="term_freight" defaultValue={t.freightTerm || "Freight Collect"} /></TableCell></TableRow>
+                    <TableRow><TableCell>05</TableCell><TableCell className="font-medium">Port of Loading</TableCell><TableCell><Input name="term_pol" defaultValue={t.portLoading || settings?.defaultPort || "Chittagong, Bangladesh"} /></TableCell></TableRow>
+                    <TableRow><TableCell>06</TableCell><TableCell className="font-medium">Partial Shipment</TableCell><TableCell><Input name="term_partial" defaultValue={t.partialShipment || "Allowed"} /></TableCell></TableRow>
+                    <TableRow><TableCell>07</TableCell><TableCell className="font-medium">Charges</TableCell><TableCell><Input name="term_charges" defaultValue={t.charges || "Outside Bangladesh on Applicant's account"} /></TableCell></TableRow>
+                    <TableRow><TableCell>08</TableCell><TableCell className="font-medium">Insurance</TableCell><TableCell><Input name="term_insurance" defaultValue={t.insurance || "Covered by Applicant"} /></TableCell></TableRow>
+                    <TableRow><TableCell>09</TableCell><TableCell className="font-medium">L/C Term 1</TableCell><TableCell><Input name="term_lc1" defaultValue={t.lcTerm1 || ""} placeholder="Specific LC Condition..." /></TableCell></TableRow>
+                    <TableRow><TableCell>10</TableCell><TableCell className="font-medium">L/C Term 2</TableCell><TableCell><Input name="term_lc2" defaultValue={t.lcTerm2 || ""} placeholder="Additional LC Condition..." /></TableCell></TableRow>
+                    <TableRow><TableCell>11</TableCell><TableCell className="font-medium">Port of Discharge</TableCell><TableCell><Input name="term_pod" defaultValue={t.portDischarge || ""} placeholder="e.g. Hamburg" /></TableCell></TableRow>
+                    <TableRow><TableCell>12</TableCell><TableCell className="font-medium">Documents</TableCell><TableCell><Input name="term_docs" defaultValue={t.documents || "Comm. Invoice, Packing List, B/L, CO, GSP"} /></TableCell></TableRow>
                 </TableBody>
              </Table>
           </CardContent>
       </Card>
 
-      {/* 4. FOOTER & SIGNATURE */}
-      <div className="grid grid-cols-2 gap-12 mt-12 px-6">
-            <div className="mt-8">
-                <div className="border-t border-slate-300 w-2/3 pt-2">
-                    <p className="font-bold text-sm">ACCEPTED BY (BUYER)</p>
-                    <p className="text-xs text-slate-500">Signature & Seal</p>
-                </div>
-            </div>
-            <div className="mt-8 text-right flex flex-col items-end">
-                <div className="border-t border-slate-900 w-2/3 pt-2">
-                    <p className="font-bold text-sm">P.I. OCEAN TEX</p>
-                    <p className="text-xs text-slate-500">Authorized Signature</p>
-                </div>
-            </div>
-      </div>
-
+      {/* 4. FOOTER */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 p-4 bg-white border-t flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
           <div className="text-sm text-slate-500 pl-4">
-              Total Value: <span className="font-bold text-slate-900 text-lg">${order.totalValue.toLocaleString()}</span>
+              Total Value: <span className="font-bold text-slate-900 text-lg">${grandTotal.toLocaleString()}</span>
           </div>
           <div className="flex gap-3 pr-4">
               <Button type="button" variant="outline">
