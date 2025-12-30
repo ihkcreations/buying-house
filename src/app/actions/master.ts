@@ -2,6 +2,8 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth"; 
+import { headers } from "next/headers";
 
 // --- BUYER ACTIONS ---
 export async function createBuyer(formData: FormData) {
@@ -42,8 +44,12 @@ export async function updateBuyer(id: string, formData: FormData) {
 
 export async function deleteBuyer(id: string) {
   try {
-    // Note: If buyer has orders, Prisma might throw an error depending on Schema.
-    // Ideally, we shouldn't delete buyers with history, but for this fix we allow it.
+    // SECURITY CHECK
+    const session = await auth.api.getSession({ headers: await headers() });
+    if ((session?.user as any)?.role !== "admin") {
+        return { error: "Unauthorized. Only Admins can delete." };
+    }
+
     await db.buyer.delete({ where: { id } });
     revalidatePath("/admin/buyers");
     return { success: "Buyer deleted successfully" };
@@ -91,6 +97,12 @@ export async function updateFactory(id: string, formData: FormData) {
 
 export async function deleteFactory(id: string) {
   try {
+    // SECURITY CHECK
+    const session = await auth.api.getSession({ headers: await headers() });
+    if ((session?.user as any)?.role !== "admin") {
+        return { error: "Unauthorized. Only Admins can delete." };
+    }
+
     await db.factory.delete({ where: { id } });
     revalidatePath("/admin/factories");
     return { success: "Factory deleted successfully" };

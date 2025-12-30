@@ -24,7 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 type Buyer = { id: string; name: string; country: string; };
 
-export function BuyerClient({ initialBuyers }: { initialBuyers: Buyer[] }) {
+export function BuyerClient({ initialBuyers, userRole }: { initialBuyers: Buyer[], userRole: string }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingBuyer, setEditingBuyer] = useState<Buyer | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -99,9 +99,12 @@ export function BuyerClient({ initialBuyers }: { initialBuyers: Buyer[] }) {
                         <DropdownMenuItem onClick={() => setEditingBuyer(buyer)}>
                           <Pencil className="w-4 h-4 mr-2" /> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingId(buyer.id)} className="text-red-600">
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
+                        {/* CONDITIONAL RENDER: Only Admin can see Delete */}
+                        {userRole === "admin" && (
+                            <DropdownMenuItem onClick={() => setDeletingId(buyer.id)} className="text-red-600">
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

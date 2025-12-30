@@ -191,7 +191,8 @@ export function AppSidebar() {
       </ScrollArea>
 
       <div className="border-t p-3 space-y-1">
-        {userRole === "admin" && (
+        {/* 1. MASTER DATA (Visible to Admin, Merch, Commercial) */}
+        {["admin", "merchandiser", "commercial"].includes(userRole) && (
             <>
                 <Link href="/admin/buyers">
                 <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">

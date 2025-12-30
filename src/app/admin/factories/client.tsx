@@ -24,7 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 type Factory = { id: string; name: string; address: string; };
 
-export function FactoryClient({ initialFactories }: { initialFactories: Factory[] }) {
+export function FactoryClient({ initialFactories, userRole }: { initialFactories: Factory[], userRole: string }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingFactory, setEditingFactory] = useState<Factory | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -92,9 +92,12 @@ export function FactoryClient({ initialFactories }: { initialFactories: Factory[
                         <DropdownMenuItem onClick={() => setEditingFactory(f)}>
                           <Pencil className="w-4 h-4 mr-2" /> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingId(f.id)} className="text-red-600">
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
+                        {/* CONDITIONAL RENDER: Only Admin can see Delete */}
+                        {userRole === "admin" && (
+                            <DropdownMenuItem onClick={() => setDeletingId(f.id)} className="text-red-600">
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

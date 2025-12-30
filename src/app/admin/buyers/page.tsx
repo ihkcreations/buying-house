@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
-import { BuyerClient } from "./client"; // We will make this next
+import { BuyerClient } from "./client";
 import { protectPage } from "@/lib/protect";
 
 export default async function ManageBuyersPage() {
-  await protectPage(["admin"]);
-  
-  // Fetch data on the server
+  // Allow these roles to enter
+  const user = await protectPage(["admin", "merchandiser", "commercial"]);
+
   const buyers = await db.buyer.findMany({
     orderBy: { name: "asc" },
   });
@@ -15,9 +15,8 @@ export default async function ManageBuyersPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Manage Buyers</h1>
       </div>
-      
-      {/* We pass data to the client component to handle the UI/Dialog */}
-      <BuyerClient initialBuyers={buyers} />
+      {/* Pass user role to handle UI logic */}
+      <BuyerClient initialBuyers={buyers} userRole={user.role} />
     </div>
   );
 }

@@ -93,9 +93,6 @@ export default async function DashboardPage() {
     <div className="space-y-8 pb-10">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h2>
-        <Link href="/orders/new">
-            <Button className="bg-slate-900 hover:bg-slate-800">Create New Order</Button>
-        </Link>
       </div>
 
       {/* --- KPI CARDS --- */}
