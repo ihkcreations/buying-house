@@ -5,43 +5,39 @@ import { revalidatePath } from "next/cache";
 
 export async function createFabricBooking(orderId: string, formData: FormData) {
   try {
-    const fabricName = formData.get("fabricName") as string;
-    const yarnCount = formData.get("yarnCount") as string;
+    // Math
     const consumption = parseFloat(formData.get("consumption") as string);
     const wastage = parseFloat(formData.get("wastage") as string);
-    const requiredQty = parseFloat(formData.get("requiredQty") as string); // Calculated on frontend
-    const supplier = formData.get("supplier") as string;
+    const requiredQty = parseFloat(formData.get("requiredQty") as string);
 
-    if (!fabricName || !consumption) {
-        return { error: "Fabric Name and Consumption are required" };
-    }
-
+    // Create
     await db.fabricBooking.create({
       data: {
         orderId,
-        fabricName,
-        yarnCount,
+        type: formData.get("type") as string, // BODY or RIB
+        composition: formData.get("composition") as string,
+        construction: formData.get("construction") as string,
+        yarnCount: formData.get("yarnCount") as string,
+        gsm: formData.get("gsm") as string,
+        dia: formData.get("dia") as string,
+        stitchLength: formData.get("sl") as string, // Optional
+        color: formData.get("color") as string, // Optional
+        supplier: formData.get("supplier") as string,
         consumption,
         wastage,
         requiredQty,
-        bookedQty: requiredQty, // Initially, we assume we book what is required
-        supplier,
       },
     });
 
-    // Update Order status to indicate progress
-    await db.order.update({
-        where: { id: orderId },
-        data: { status: "FABRIC_BOOKED" }
-    });
-
+    await db.order.update({ where: { id: orderId }, data: { status: "FABRIC_BOOKED" } });
     revalidatePath(`/orders/${orderId}`);
-    return { success: "Fabric Booking added successfully!" };
+    return { success: "Fabric Booking added!" };
   } catch (error) {
-    return { error: "Failed to add fabric." };
+    return { error: "Failed to add booking." };
   }
 }
 
+// ... deleteFabricBooking remains the same ...
 export async function deleteFabricBooking(id: string, orderId: string) {
     try {
         await db.fabricBooking.delete({ where: { id } });

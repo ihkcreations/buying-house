@@ -79,6 +79,8 @@ model Order {
   proformaInvoice ProformaInvoice?
   salesContract   SalesContract?
   commercialDocs  CommercialDoc[]
+
+  actualCosting   ActualCosting?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -90,6 +92,7 @@ enum OrderStatus {
   FABRIC_BOOKED
   IN_PRODUCTION
   SHIPPED
+  OCS_FINALIZED
   CLOSED
 }
 
@@ -156,15 +159,27 @@ model FabricBooking {
   orderId   String   @db.ObjectId
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
-  fabricName   String // "100% Cotton Jersey"
-  yarnCount    String // "26/1 Combed" (Added based on review)
-  consumption  Float  // The magic number
-  wastage      Float  // 5%
+  // 1. Classification
+  type         String   @default("BODY") // "BODY", "RIB", "COLLAR"
   
-  requiredQty  Float
-  bookedQty    Float
+  // 2. Technical Specs (The Recipe)
+  composition  String   // "100% Cotton"
+  construction String   // "Single Jersey"
+  yarnCount    String   // "26/1 Combed"
+  gsm          String?  // "160"
+  dia          String?  // "Dia 30 Open" or "72 inch"
+  stitchLength String?  // "2.90"
   
+  // 3. The Math
+  consumption  Float    // kg/dzn
+  wastage      Float    // %
+  requiredQty  Float    // Calculated
+  
+  // 4. Logistics
   supplier     String?
+  color        String?  // If booking specific color (e.g., Yarn Dyed)
+  
+  createdAt    DateTime @default(now())
 }
 
 // --- 7. SAMPLE MODULE ---
@@ -335,6 +350,29 @@ model CompanySettings {
   // Tab 3: Defaults
   defaultPaymentTerms String?
   defaultPort         String?
+  
+  updatedAt DateTime @updatedAt
+}
+
+// --- 12. OCS (ORDER COST SHEET / ACTUALS) ---
+model ActualCosting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @unique @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Note: These are TOTAL dollar amounts for the whole order, not per dozen
+  fabricActual      Float   @default(0)
+  trimsActual       Float   @default(0)
+  printingActual    Float   @default(0)
+  embroideryActual  Float   @default(0)
+  washingActual     Float   @default(0)
+  cmActual          Float   @default(0) // Total paid to factory
+
+  labTestActual     Float   @default(0)
+  inspectionActual  Float   @default(0)
+  samplingActual    Float   @default(0)
+  commercialActual  Float   @default(0)
+  logisticsActual   Float   @default(0) // The dangerous one (Air freight)
   
   updatedAt DateTime @updatedAt
 }

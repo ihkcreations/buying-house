@@ -11,15 +11,29 @@ import { CostingForm } from "@/components/orders/costing-form";
 import { TNAForm } from "@/components/orders/tna-form";
 import { FabricBooking } from "@/components/orders/fabric-booking";
 import { ProductionLog } from "@/components/orders/production-log";
+import { OCSForm } from "@/components/orders/ocs-form";
 
 // --- HELPER: Status Badge (Reused) ---
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case "PENDING": return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
-    case "COSTING_APPROVED": return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Costing Approved</Badge>;
-    case "IN_PRODUCTION": return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">In Production</Badge>;
-    case "SHIPPED": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Shipped</Badge>;
-    default: return <Badge variant="secondary">{status}</Badge>;
+    case "PENDING":
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
+    case "COSTING_APPROVED":
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Costing Approved</Badge>;
+    case "FABRIC_BOOKED":
+      return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Fabric Booked</Badge>;
+    case "IN_PRODUCTION":
+      return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">In Production</Badge>;
+    case "SHIPPED":
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Shipped</Badge>;
+    case "OCS_FINALIZED":
+      return (
+        <Badge variant="outline" className="bg-slate-900 text-white border-slate-900 hover:bg-slate-800">
+           OCS Ready
+        </Badge>
+      );
+    default:
+      return <Badge variant="secondary">{status}</Badge>;
   }
 };
 
@@ -37,6 +51,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
         timeAction: true,  // Needed for Tab 3 (NEW)
         fabricBookings: true,
         productionLogs: true,
+        actualCosting: true, // Needed for OCS Form
     },
   });
 
@@ -93,6 +108,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
           <TabsTrigger value="tna">T&A Plan</TabsTrigger>
           <TabsTrigger value="fabric">Fabric Booking</TabsTrigger>
           <TabsTrigger value="production">Production</TabsTrigger>
+          <TabsTrigger value="ocs">Post Costing (OCS)</TabsTrigger>
         </TabsList>
 
         {/* --- TAB 1: OVERVIEW --- */}
@@ -181,6 +197,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
             <FabricBooking 
                 orderId={order.id} 
                 orderQty={order.orderQty} 
+                matrix={order.sizeColorMap} 
                 bookings={order.fabricBookings}
                 factories={factories}
             />
@@ -193,6 +210,23 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                 orderQty={order.orderQty} 
                 logs={order.productionLogs}
             />
+        </TabsContent>
+
+        {/* --- TAB 6: OCS (Post Costing) --- */}
+        <TabsContent value="ocs">
+            {order.costing ? (
+                <OCSForm 
+                    orderId={order.id}
+                    budgetPerDzn={order.costing}
+                    actuals={order.actualCosting}
+                    orderQty={order.orderQty}
+                    totalRevenue={order.totalValue}
+                />
+            ) : (
+                <div className="p-8 text-center text-slate-500 bg-slate-50 border rounded">
+                    Please create and approve the Initial Costing Sheet first.
+                </div>
+            )}
         </TabsContent>
 
       </Tabs>

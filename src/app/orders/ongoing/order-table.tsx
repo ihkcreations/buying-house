@@ -48,6 +48,12 @@ const getStatusBadge = (status: string) => {
       return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">In Production</Badge>;
     case "SHIPPED":
       return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Shipped</Badge>;
+    case "OCS_FINALIZED":
+      return (
+        <Badge variant="outline" className="bg-slate-900 text-white border-slate-900 hover:bg-slate-800">
+           OCS Ready
+        </Badge>
+      );
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
