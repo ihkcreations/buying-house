@@ -23,6 +23,35 @@ export async function createBuyer(formData: FormData) {
   }
 }
 
+// --- BUYER UPDATES ---
+export async function updateBuyer(id: string, formData: FormData) {
+  try {
+    const name = formData.get("name") as string;
+    const country = formData.get("country") as string;
+
+    await db.buyer.update({
+      where: { id },
+      data: { name, country },
+    });
+    revalidatePath("/admin/buyers");
+    return { success: "Buyer updated successfully" };
+  } catch (error) {
+    return { error: "Failed to update buyer." };
+  }
+}
+
+export async function deleteBuyer(id: string) {
+  try {
+    // Note: If buyer has orders, Prisma might throw an error depending on Schema.
+    // Ideally, we shouldn't delete buyers with history, but for this fix we allow it.
+    await db.buyer.delete({ where: { id } });
+    revalidatePath("/admin/buyers");
+    return { success: "Buyer deleted successfully" };
+  } catch (error) {
+    return { error: "Cannot delete buyer. They might have active orders." };
+  }
+}
+
 // --- FACTORY ACTIONS ---
 export async function createFactory(formData: FormData) {
   const name = formData.get("name") as string;
@@ -40,5 +69,32 @@ export async function createFactory(formData: FormData) {
     return { success: "Factory created successfully" };
   } catch (error) {
     return { error: "Failed to create factory." };
+  }
+}
+
+// --- FACTORY UPDATES ---
+export async function updateFactory(id: string, formData: FormData) {
+  try {
+    const name = formData.get("name") as string;
+    const address = formData.get("address") as string;
+
+    await db.factory.update({
+      where: { id },
+      data: { name, address },
+    });
+    revalidatePath("/admin/factories");
+    return { success: "Factory updated successfully" };
+  } catch (error) {
+    return { error: "Failed to update factory." };
+  }
+}
+
+export async function deleteFactory(id: string) {
+  try {
+    await db.factory.delete({ where: { id } });
+    revalidatePath("/admin/factories");
+    return { success: "Factory deleted successfully" };
+  } catch (error) {
+    return { error: "Cannot delete factory. They might be linked to active bookings." };
   }
 }

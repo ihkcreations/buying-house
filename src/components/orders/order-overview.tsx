@@ -1,36 +1,61 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine 
 } from "recharts";
 import { 
-  DollarSign, Scissors, CalendarClock, AlertTriangle, CheckCircle2, Box
+  DollarSign, Scissors, CalendarClock, AlertTriangle, CheckCircle2, Box, TrendingUp
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 
 export function OrderOverview({ order }: { order: any }) {
   
-  // --- FINANCIALS ---
+  // --- 1. FINANCIAL LOGIC (Smart Switch) ---
   const revenue = order.totalValue;
-  // Costing Logic...
-  let estimatedProfit = 0;
-  let marginPercent = 0;
-  if (order.costing) {
+  let cost = 0;
+  let profit = 0;
+  let isActual = false; // Flag to change label
+
+  if (order.actualCosting) {
+    // PRIORITY 1: Use OCS Actuals (Realized Numbers)
+    isActual = true;
+    
+    // Sum all actual fields from the OCS Record
+    const ac = order.actualCosting;
+    cost = 
+      (ac.fabricActual || 0) + (ac.trimsActual || 0) + 
+      (ac.printingActual || 0) + (ac.embroideryActual || 0) + (ac.washingActual || 0) + (ac.cmActual || 0) +
+      (ac.labTestActual || 0) + (ac.inspectionActual || 0) + (ac.samplingActual || 0) + 
+      (ac.commercialActual || 0) + (ac.logisticsActual || 0);
+      
+    profit = revenue - cost;
+
+  } else if (order.costing) {
+    // PRIORITY 2: Use Costing Budget (Estimated Numbers)
     const dozens = order.orderQty / 12;
-    const profitPerDzn = order.costing.profitMargin;
-    estimatedProfit = profitPerDzn * dozens;
-    marginPercent = (estimatedProfit / revenue) * 100;
+    
+    // Calculate Commission Amount from Budget
+    const commPercent = order.costing.commissionPercent || 0;
+    const commAmountPerDzn = (order.unitPrice * 12) * (commPercent / 100);
+    
+    // Total Cost Per Dzn (Expenses + Commission)
+    const costPerDzn = order.costing.totalCost + commAmountPerDzn;
+    
+    cost = costPerDzn * dozens;
+    profit = revenue - cost;
   }
+
+  const marginPercent = revenue > 0 ? (profit / revenue) * 100 : 0;
 
   const financialData = [
     { name: "Revenue", value: revenue, color: "#2563eb" }, 
-    { name: "Cost", value: revenue - estimatedProfit, color: "#94a3b8" }, 
-    { name: "Profit", value: estimatedProfit, color: estimatedProfit >= 0 ? "#16a34a" : "#dc2626" },
+    { name: "Cost", value: cost, color: "#94a3b8" }, 
+    { name: "Profit", value: profit, color: profit >= 0 ? "#16a34a" : "#dc2626" },
   ];
 
-  // --- PRODUCTION ---
+  // --- 2. PRODUCTION LOGIC ---
   const logs = order.productionLogs || [];
   const totalCut = logs.reduce((acc: number, log: any) => acc + log.cutQty, 0);
   const totalSew = logs.reduce((acc: number, log: any) => acc + log.sewQty, 0);
@@ -42,7 +67,7 @@ export function OrderOverview({ order }: { order: any }) {
     { name: "Pack", value: totalPack, color: "#22c55e" }, 
   ];
 
-  // --- TIMELINE ---
+  // --- 3. TIMELINE LOGIC ---
   const shipDate = order.timeAction?.shipmentPlan ? new Date(order.timeAction.shipmentPlan) : null;
   const daysLeft = shipDate ? differenceInDays(shipDate, new Date()) : null;
   const isLate = daysLeft !== null && daysLeft < 0;
@@ -50,10 +75,10 @@ export function OrderOverview({ order }: { order: any }) {
   return (
     <div className="space-y-6">
       
-      {/* ROW 1: PRIMARY METRICS */}
+      {/* METRICS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* 1. ORDER QUANTITY (New & Prominent) */}
+        {/* QTY */}
         <Card className="bg-slate-900 text-white shadow-md border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-300">Total Order Qty</CardTitle>
@@ -65,7 +90,7 @@ export function OrderOverview({ order }: { order: any }) {
           </CardContent>
         </Card>
 
-        {/* 2. REVENUE */}
+        {/* REVENUE */}
         <Card className="bg-white border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Revenue</CardTitle>
@@ -77,23 +102,26 @@ export function OrderOverview({ order }: { order: any }) {
           </CardContent>
         </Card>
 
-        {/* 3. PROFIT */}
+        {/* PROFIT (Smart Label) */}
         <Card className="bg-white border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Est. Profit</CardTitle>
-            {estimatedProfit >= 0 ? <CheckCircle2 className="h-4 w-4 text-green-500"/> : <AlertTriangle className="h-4 w-4 text-red-500"/>}
+            <CardTitle className="text-sm font-medium text-slate-500">
+                {isActual ? "Realized Net Profit" : "Est. Profit"}
+            </CardTitle>
+            {isActual ? <TrendingUp className="h-4 w-4 text-purple-600"/> : (profit >= 0 ? <CheckCircle2 className="h-4 w-4 text-green-500"/> : <AlertTriangle className="h-4 w-4 text-red-500"/>)}
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${estimatedProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {order.costing ? `$${estimatedProfit.toLocaleString()}` : "-"}
+            <div className={`text-2xl font-bold ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {cost > 0 ? `$${profit.toLocaleString()}` : "-"}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              {order.costing ? `${marginPercent.toFixed(1)}% Margin` : "No Costing"}
+            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              {cost > 0 ? `${marginPercent.toFixed(1)}% Margin` : "No Costing Data"}
+              {isActual && <span className="bg-slate-100 text-slate-600 px-1 rounded text-[10px] font-bold">ACTUAL</span>}
             </p>
           </CardContent>
         </Card>
 
-        {/* 4. TIMELINE */}
+        {/* TIMELINE */}
         <Card className={`bg-white border shadow-sm ${isLate ? "border-red-200 bg-red-50" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Ship Date</CardTitle>
@@ -110,11 +138,14 @@ export function OrderOverview({ order }: { order: any }) {
         </Card>
       </div>
 
-      {/* ROW 2: CHARTS */}
+      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Financials */}
         <Card className="shadow-sm">
-          <CardHeader className="pb-0"><CardTitle className="text-base">Financial Breakdown</CardTitle></CardHeader>
+          <CardHeader className="pb-0 flex flex-row justify-between">
+              <CardTitle className="text-base">Financial Breakdown</CardTitle>
+              {isActual && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">FINALIZED</span>}
+          </CardHeader>
           <CardContent>
             <div className="h-[200px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
