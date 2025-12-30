@@ -209,7 +209,25 @@ model ProformaInvoice {
   date      DateTime
   bankDetails String
   
-  items     Json // [{ desc: "T-Shirt", hsCode: "6109.10", qty: 5000, rate: 5 }]
+  // --- THE 12 TERMS & CONDITIONS ---
+  payment         String?
+  blClause        String?
+  tolerance       String?
+  freightTerm     String?
+  portLoading     String?
+  partialShipment String?
+  charges         String?
+  insurance       String?
+  lcTerm1         String?
+  lcTerm2         String?
+  portDischarge   String?
+  documents       String?
+
+  // Items are complex (style, article, dates), so we keep them as JSON
+  items     Json 
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SalesContract {

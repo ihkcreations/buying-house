@@ -9,41 +9,48 @@ export async function savePI(orderId: string, formData: FormData) {
     const dateStr = formData.get("date") as string;
     const bankDetails = formData.get("bankDetails") as string;
     
-    // Collect the 12 Terms
-    const terms = {
-        paymentMethod: formData.get("term_payment"),
-        shipmentDate: formData.get("term_shipment"),
-        portOfLoading: formData.get("term_port"),
-        tolerance: formData.get("term_tolerance"),
-        // Add others as needed, or store as a big JSON object
-    };
-
-    // Collect Items (For now, we assume single item based on Order, 
-    // but structured as JSON for future flexibility)
+    // Collect Items
     const items = [
         {
+            styleOrder: formData.get("item_style"),
+            article: formData.get("item_article"),
             description: formData.get("item_desc"),
             hsCode: formData.get("item_hs"),
+            shippingDate: formData.get("item_shipdate"),
             qty: parseInt(formData.get("item_qty") as string),
             rate: parseFloat(formData.get("item_rate") as string),
             amount: parseFloat(formData.get("item_amount") as string),
         }
     ];
 
-    await db.proformaInvoice.upsert({
-      where: { orderId },
-      update: {
-        piNumber,
-        date: new Date(dateStr),
-        bankDetails,
-        items: items, // Saves as JSON
-      },
-      create: {
-        orderId,
+    // Payload mapping to new Schema fields
+    const payload = {
         piNumber,
         date: new Date(dateStr),
         bankDetails,
         items: items,
+        
+        // Map form inputs to the 12 Database Columns
+        payment: formData.get("term_payment") as string,
+        blClause: formData.get("term_bl") as string,
+        tolerance: formData.get("term_tolerance") as string,
+        freightTerm: formData.get("term_freight") as string,
+        portLoading: formData.get("term_pol") as string,
+        partialShipment: formData.get("term_partial") as string,
+        charges: formData.get("term_charges") as string,
+        insurance: formData.get("term_insurance") as string,
+        lcTerm1: formData.get("term_lc1") as string,
+        lcTerm2: formData.get("term_lc2") as string,
+        portDischarge: formData.get("term_pod") as string,
+        documents: formData.get("term_docs") as string,
+    };
+
+    await db.proformaInvoice.upsert({
+      where: { orderId },
+      update: payload,
+      create: {
+        orderId,
+        ...payload
       },
     });
 
@@ -52,53 +59,5 @@ export async function savePI(orderId: string, formData: FormData) {
   } catch (error) {
     console.error(error);
     return { error: "Failed to save PI." };
-  }
-}
-
-export async function saveSC(orderId: string, formData: FormData) {
-  try {
-    const scNumber = formData.get("scNumber") as string;
-    const dateStr = formData.get("scDate") as string;
-
-    // In a real app, we would handle file uploads for signatures here
-    // For now, we assume the form is just saving the data record
-    
-    await db.salesContract.upsert({
-      where: { orderId },
-      update: {
-        scNumber,
-        scDate: new Date(dateStr),
-      },
-      create: {
-        orderId,
-        scNumber,
-        scDate: new Date(dateStr),
-      },
-    });
-
-    revalidatePath(`/commercial/orders/${orderId}`);
-    return { success: "Sales Contract Saved!" };
-  } catch (error) {
-    return { error: "Failed to save Contract." };
-  }
-}
-
-export async function updateDocStatus(orderId: string, docName: string, status: string) {
-  try {
-    // In a real app, we would save the file URL here.
-    // For MVP, we just upsert a record saying the doc is "COMPLETED"
-    await db.commercialDoc.create({
-        data: {
-            orderId,
-            name: docName,
-            type: "UPLOADED",
-            url: "http://placeholder.com/file.pdf", // Placeholder
-            status: status
-        }
-    });
-    revalidatePath(`/commercial/orders/${orderId}`);
-    return { success: "Document Status Updated" };
-  } catch (error) {
-    return { error: "Failed to update doc" };
   }
 }

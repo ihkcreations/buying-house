@@ -7,10 +7,12 @@ import { Header } from "./header";
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
-  // Check if the current page is Login or Signup
-  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  // FIX: Added 'pathname === "/"' to this list.
+  // Now, the root path acts like a full-screen page (no sidebar), 
+  // preventing the flash while the middleware redirects.
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/";
 
-  // 1. If it's an Auth Page, just render the content (Full Screen, No Sidebar)
+  // 1. If it's an Auth Page OR Root, render just the content (No Sidebar)
   if (isAuthPage) {
     return (
         <main className="min-h-screen bg-slate-100 flex flex-col">
@@ -19,15 +21,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // 2. If it's an App Page, render the Sidebar + Header layout
+  // 2. If it's an App Page (Dashboard, Orders, etc.), render Sidebar + Header
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Fixed Sidebar */}
       <div className="hidden md:block fixed inset-y-0 z-50">
         <AppSidebar />
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 md:pl-64 flex flex-col">
         <Header />
         <main className="flex-1 p-6 overflow-y-auto">

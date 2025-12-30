@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Save, Printer, Building2, MapPin, Phone } from "lucide-react";
+import { Save, Printer, Building2, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { savePI } from "@/app/actions/commercial";
 import { Button } from "@/components/ui/button";
@@ -23,193 +23,209 @@ export function PIGenerator({
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- 1. CONSTRUCT DYNAMIC DEFAULTS ---
-  // If settings exist, use them. Otherwise, fall back to hardcoded defaults.
-  
+  // --- DEFAULTS ---
   const defaultSupplierInfo = settings 
-    ? `${settings.companyName}\n${settings.companyAddress}\n${settings.contactPhone || ""}\n${settings.contactEmail || ""}`
-    : "P.I. OCEAN TEX\nDhaka, Bangladesh\n(Please configure settings)";
+    ? `${settings.companyName}\n${settings.companyAddress}\n${settings.contactPhone || ""}`
+    : "P.I. OCEAN TEX\nDhaka, Bangladesh";
 
   const defaultBankDetails = settings
     ? `${settings.bankName}\n${settings.bankAddress || ""}\nSWIFT: ${settings.swiftCode}\nA/C Name: ${settings.accountName}\nA/C No: ${settings.accountNumber}`
     : "TRUST BANK PLC\nDilkusha Corp Branch\nSWIFT: TBLBDDH";
 
-  const defaultPaymentTerm = settings?.defaultPaymentTerms || "Irrevocable L/C at sight";
-  const defaultPort = settings?.defaultPort || "Chittagong, Bangladesh";
+  // Existing terms from DB or defaults
+  const t = existingPI || {};
 
-  // Item Defaults (From Order)
+  // Item Defaults
   const defaultItems = existingPI?.items?.[0] || {
-      description: `${order.styleNo} - ${order.season}`,
-      hsCode: "", 
+      styleOrder: `${order.styleNo} / ${order.orderNo}`,
+      article: "", 
+      description: `Men's 100% Cotton Knitted ${order.styleNo}`, 
+      hsCode: "6109.10",
+      shippingDate: format(new Date(new Date().setDate(new Date().getDate() + 45)), "yyyy-MM-dd"), 
       qty: order.orderQty,
       rate: order.unitPrice,
       amount: order.totalValue
   };
 
-  // --- HANDLER ---
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
     const result = await savePI(order.id, formData);
-    if (result?.error) {
-      toast.error(result.error);
-    } else {
-      toast.success(result.success);
-    }
+    if (result?.error) toast.error(result.error);
+    else toast.success(result.success);
     setIsLoading(false);
   };
 
   return (
     <form action={handleSubmit} className="space-y-8 pb-32">
       
-      {/* 1. HEADER INFO */}
+      {/* 1. HEADER INFO (Same as before) */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Proforma Invoice Details</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-4">
                 <div className="flex flex-col">
                     <Label className="text-xs text-slate-500 mb-1">PI Number</Label>
-                    <Input 
-                        name="piNumber" 
-                        defaultValue={existingPI?.piNumber || `PI-${order.orderNo}`} 
-                        className="w-40 font-mono font-bold text-blue-700"
-                        placeholder="PI Number"
-                        required
-                    />
+                    <Input name="piNumber" defaultValue={existingPI?.piNumber || `PI-${order.orderNo}`} className="w-40 font-mono font-bold text-blue-700" required />
                 </div>
                 <div className="flex flex-col">
                     <Label className="text-xs text-slate-500 mb-1">Issue Date</Label>
-                    <Input 
-                        name="date" 
-                        type="date" 
-                        defaultValue={existingPI?.date ? format(new Date(existingPI.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")}
-                        className="w-40"
-                        required
-                    />
+                    <Input name="date" type="date" defaultValue={existingPI?.date ? format(new Date(existingPI.date), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")} className="w-40" />
                 </div>
             </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Box 1: Supplier (Read-Only View of Settings) */}
             <div className="p-4 border rounded bg-slate-50 h-full">
-                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                    <MapPin className="w-3 h-3" /> Beneficiary / Supplier
-                </Label>
-                <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium">
-                    {defaultSupplierInfo}
-                </div>
+                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2"><MapPin className="w-3 h-3" /> Beneficiary / Supplier</Label>
+                <div className="text-sm text-slate-700 whitespace-pre-wrap font-medium">{defaultSupplierInfo}</div>
             </div>
-
-            {/* Box 2: Buyer (From Master Data) */}
             <div className="p-4 border rounded bg-slate-50 h-full">
-                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                    <Building2 className="w-3 h-3" /> Applicant / Buyer
-                </Label>
+                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2"><Building2 className="w-3 h-3" /> Applicant / Buyer</Label>
                 <div className="font-bold text-slate-900">{order.buyer.name}</div>
-                <div className="text-sm text-slate-600 mt-1">
-                    {order.buyer.country}
-                </div>
+                <div className="text-sm text-slate-600 mt-1">{order.buyer.country}</div>
             </div>
-
-            {/* Box 3: Bank (Editable Textarea) */}
             <div className="p-4 border rounded bg-yellow-50/50 border-yellow-100 h-full">
-                <Label className="text-xs text-yellow-700 uppercase flex items-center gap-1 mb-2">
-                    <Building2 className="w-3 h-3" /> Advising Bank Details
-                </Label>
-                <Textarea 
-                    name="bankDetails"
-                    defaultValue={existingPI?.bankDetails || defaultBankDetails}
-                    className="mt-1 h-[120px] text-sm bg-white resize-none font-mono"
-                    placeholder="Enter Bank Name, Address, Swift Code..."
-                />
+                <Label className="text-xs text-yellow-700 uppercase flex items-center gap-1 mb-2"><Building2 className="w-3 h-3" /> Advising Bank</Label>
+                <Textarea name="bankDetails" defaultValue={existingPI?.bankDetails || defaultBankDetails} className="mt-1 h-[120px] text-sm bg-white resize-none font-mono" />
             </div>
         </CardContent>
       </Card>
 
-      {/* 2. ITEMS TABLE */}
+      {/* 2. GOODS TABLE (Same as before) */}
       <Card>
-          <CardHeader><CardTitle>Items & Description</CardTitle></CardHeader>
-          <CardContent className="p-0">
-              <Table>
+          <CardHeader><CardTitle>Description of Goods</CardTitle></CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+              <Table className="min-w-[1000px]">
                   <TableHeader>
                       <TableRow className="bg-slate-50">
-                          <TableHead className="w-[10%]">Serial</TableHead>
-                          <TableHead className="w-[40%]">Description of Goods</TableHead>
-                          <TableHead className="w-[15%]">HS Code</TableHead>
-                          <TableHead className="w-[10%] text-right">Qty (Pcs)</TableHead>
-                          <TableHead className="w-[10%] text-right">Unit Price</TableHead>
-                          <TableHead className="w-[15%] text-right">Amount</TableHead>
+                          <TableHead className="w-[50px]">Sl.</TableHead>
+                          <TableHead className="w-[150px]">Style / Order</TableHead>
+                          <TableHead className="w-[120px]">Article</TableHead>
+                          <TableHead className="w-[250px]">Description & HS Code</TableHead>
+                          <TableHead className="w-[130px]">Shipping Date</TableHead>
+                          <TableHead className="w-[100px] text-right">Qty</TableHead>
+                          <TableHead className="w-[100px] text-right">Price</TableHead>
+                          <TableHead className="w-[120px] text-right">Amount</TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
                       <TableRow>
-                          <TableCell className="font-medium">01</TableCell>
+                          <TableCell className="text-center">01</TableCell>
+                          <TableCell><Input name="item_style" defaultValue={defaultItems.styleOrder} className="bg-slate-50" /></TableCell>
+                          <TableCell><Input name="item_article" defaultValue={defaultItems.article} placeholder="e.g. ART-001" /></TableCell>
                           <TableCell>
-                              <Input name="item_desc" defaultValue={defaultItems.description} />
+                              <div className="space-y-2">
+                                <Textarea name="item_desc" defaultValue={defaultItems.description} className="min-h-[60px] resize-none" />
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] uppercase">HS Code:</span>
+                                    <Input name="item_hs" defaultValue={defaultItems.hsCode} className="h-7 text-xs" />
+                                </div>
+                              </div>
                           </TableCell>
-                          <TableCell>
-                              <Input name="item_hs" defaultValue={defaultItems.hsCode} placeholder="6109.10" />
-                          </TableCell>
-                          <TableCell>
-                              <Input name="item_qty" defaultValue={defaultItems.qty} className="text-right bg-slate-50" readOnly />
-                          </TableCell>
-                          <TableCell>
-                              <Input name="item_rate" defaultValue={defaultItems.rate} className="text-right bg-slate-50" readOnly />
-                          </TableCell>
-                          <TableCell className="text-right font-bold">
-                              <Input 
-                                name="item_amount" 
-                                defaultValue={defaultItems.amount} 
-                                className="text-right font-bold border-none shadow-none bg-transparent" 
-                                readOnly 
-                              />
-                          </TableCell>
+                          <TableCell><Input type="date" name="item_shipdate" defaultValue={defaultItems.shippingDate} className="text-xs" /></TableCell>
+                          <TableCell><Input name="item_qty" defaultValue={defaultItems.qty} className="text-right bg-slate-50" readOnly /></TableCell>
+                          <TableCell><Input name="item_rate" defaultValue={defaultItems.rate} className="text-right bg-slate-50" readOnly /></TableCell>
+                          <TableCell className="text-right"><Input name="item_amount" defaultValue={defaultItems.amount} className="text-right font-bold border-none shadow-none bg-transparent" readOnly /></TableCell>
                       </TableRow>
                   </TableBody>
               </Table>
           </CardContent>
       </Card>
 
-      {/* 3. TERMS & CONDITIONS */}
+      {/* 3. TERMS & CONDITIONS (Updated to Exact 12 Fields) */}
       <Card>
           <CardHeader><CardTitle>Terms & Conditions</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              <div className="space-y-2">
-                  <Label>1. Payment Method</Label>
-                  <Input name="term_payment" defaultValue={defaultPaymentTerm} />
-              </div>
-              <div className="space-y-2">
-                  <Label>2. Shipment Date</Label>
-                  <Input name="term_shipment" defaultValue="45 Days from L/C receipt" />
-              </div>
-              <div className="space-y-2">
-                  <Label>3. Port of Loading</Label>
-                  <Input name="term_port" defaultValue={defaultPort} />
-              </div>
-              <div className="space-y-2">
-                  <Label>4. Tolerance</Label>
-                  <Input name="term_tolerance" defaultValue="+/- 5% in Quantity and Amount" />
-              </div>
-              <div className="space-y-2">
-                  <Label>5. Partial Shipment</Label>
-                  <Input defaultValue="Allowed" />
-              </div>
-              <div className="space-y-2">
-                  <Label>6. Transhipment</Label>
-                  <Input defaultValue="Allowed" />
-              </div>
-              <div className="space-y-2">
-                  <Label>7. Country of Origin</Label>
-                  <Input defaultValue="Bangladesh" />
-              </div>
-              <div className="space-y-2">
-                  <Label>8. Packing</Label>
-                  <Input defaultValue="Export Standard Carton Packing" />
-              </div>
+          <CardContent className="p-0">
+             <Table>
+                <TableHeader>
+                    <TableRow className="bg-slate-100">
+                        <TableHead className="w-[60px]">No.</TableHead>
+                        <TableHead className="w-[200px]">Type</TableHead>
+                        <TableHead>Description</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        <TableCell>01</TableCell>
+                        <TableCell className="font-medium">Payment</TableCell>
+                        <TableCell><Input name="term_payment" defaultValue={t.payment || settings?.defaultPaymentTerms || "Irrevocable L/C at sight"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>02</TableCell>
+                        <TableCell className="font-medium">B/L Clause</TableCell>
+                        <TableCell><Input name="term_bl" defaultValue={t.blClause || "Negotiable against documents"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>03</TableCell>
+                        <TableCell className="font-medium">Tolerance</TableCell>
+                        <TableCell><Input name="term_tolerance" defaultValue={t.tolerance || "+/- 5% in Quantity and Amount"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>04</TableCell>
+                        <TableCell className="font-medium">Freight Term</TableCell>
+                        <TableCell><Input name="term_freight" defaultValue={t.freightTerm || "Freight Collect"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>05</TableCell>
+                        <TableCell className="font-medium">Port of Loading</TableCell>
+                        <TableCell><Input name="term_pol" defaultValue={t.portLoading || settings?.defaultPort || "Chittagong, Bangladesh"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>06</TableCell>
+                        <TableCell className="font-medium">Partial Shipment</TableCell>
+                        <TableCell><Input name="term_partial" defaultValue={t.partialShipment || "Allowed"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>07</TableCell>
+                        <TableCell className="font-medium">Charges</TableCell>
+                        <TableCell><Input name="term_charges" defaultValue={t.charges || "Outside Bangladesh on Applicant's account"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>08</TableCell>
+                        <TableCell className="font-medium">Insurance</TableCell>
+                        <TableCell><Input name="term_insurance" defaultValue={t.insurance || "Covered by Applicant"} /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>09</TableCell>
+                        <TableCell className="font-medium">L/C Term 1</TableCell>
+                        <TableCell><Input name="term_lc1" defaultValue={t.lcTerm1 || ""} placeholder="Specific LC Condition..." /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>10</TableCell>
+                        <TableCell className="font-medium">L/C Term 2</TableCell>
+                        <TableCell><Input name="term_lc2" defaultValue={t.lcTerm2 || ""} placeholder="Additional LC Condition..." /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>11</TableCell>
+                        <TableCell className="font-medium">Port of Discharge</TableCell>
+                        <TableCell><Input name="term_pod" defaultValue={t.portDischarge || ""} placeholder="e.g. Hamburg" /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>12</TableCell>
+                        <TableCell className="font-medium">Documents</TableCell>
+                        <TableCell><Input name="term_docs" defaultValue={t.documents || "Comm. Invoice, Packing List, B/L, CO, GSP"} /></TableCell>
+                    </TableRow>
+                </TableBody>
+             </Table>
           </CardContent>
       </Card>
 
-      {/* 4. ACTION BAR (Sticky Footer) */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-64 p-4 bg-white border-t flex items-center justify-between z-40">
+      {/* 4. FOOTER & SIGNATURE */}
+      <div className="grid grid-cols-2 gap-12 mt-12 px-6">
+            <div className="mt-8">
+                <div className="border-t border-slate-300 w-2/3 pt-2">
+                    <p className="font-bold text-sm">ACCEPTED BY (BUYER)</p>
+                    <p className="text-xs text-slate-500">Signature & Seal</p>
+                </div>
+            </div>
+            <div className="mt-8 text-right flex flex-col items-end">
+                <div className="border-t border-slate-900 w-2/3 pt-2">
+                    <p className="font-bold text-sm">P.I. OCEAN TEX</p>
+                    <p className="text-xs text-slate-500">Authorized Signature</p>
+                </div>
+            </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 md:left-64 p-4 bg-white border-t flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
           <div className="text-sm text-slate-500 pl-4">
               Total Value: <span className="font-bold text-slate-900 text-lg">${order.totalValue.toLocaleString()}</span>
           </div>
