@@ -5,40 +5,51 @@ import { revalidatePath } from "next/cache";
 
 export async function saveCosting(orderId: string, data: any) {
   try {
-    // Check if costing exists to decide Update vs Create
-    const existing = await db.costing.findUnique({
-      where: { orderId },
-    });
+    // 1. Calculate Trims Total from Breakdown
+    const accessories = data.accessoriesBreakdown || {};
+    const trimsTotal = Object.values(accessories).reduce((a: number, b: any) => a + (parseFloat(b) || 0), 0);
 
+    // 2. Prepare Payload
     const payload = {
+      // Direct
       fabricCostPerDzn: parseFloat(data.fabricCost),
-      trimsCostPerDzn: parseFloat(data.trimsCost),
-      cmCostPerDzn: parseFloat(data.cmCost),
-      commercialCost: parseFloat(data.commercialCost),
-      logisticsCost: parseFloat(data.logisticsCost),
+      trimsCostPerDzn: trimsTotal, // Auto-calculated
+      accessoriesBreakdown: accessories,
+      printingCost: parseFloat(data.printingCost) || 0,
+      embroideryCost: parseFloat(data.embroideryCost) || 0,
+      washingCost: parseFloat(data.washingCost) || 0,
+      cmCostPerDzn: parseFloat(data.cmCost) || 0,
+
+      // Indirect
+      labTestCost: parseFloat(data.labTestCost) || 0,
+      inspectionCost: parseFloat(data.inspectionCost) || 0,
+      samplingCost: parseFloat(data.samplingCost) || 0,
+      commercialCost: parseFloat(data.commercialCost) || 0,
+      logisticsCost: parseFloat(data.logisticsCost) || 0,
+
+      // Pricing
+      totalCost: parseFloat(data.totalCost),
+      profitMargin: parseFloat(data.profitMargin),
+      commissionPercent: parseFloat(data.commissionPercent) || 0,
       netFob: parseFloat(data.netFob),
-      margin: parseFloat(data.margin),
-      isApproved: false, // Reset approval on change
+      
+      isApproved: false, 
     };
 
-    if (existing) {
-      await db.costing.update({
-        where: { orderId },
-        data: payload,
-      });
-    } else {
-      await db.costing.create({
-        data: {
-          orderId,
-          ...payload,
-        },
-      });
-    }
+    // 3. Save to DB
+    await db.costing.upsert({
+      where: { orderId },
+      update: payload,
+      create: {
+        orderId,
+        ...payload,
+      },
+    });
     
-    // Update the Order Status to show progress
+    // Update Order Status
     await db.order.update({
         where: { id: orderId },
-        data: { status: "COSTING_APPROVED" } // Simplified logic for now
+        data: { status: "COSTING_APPROVED" } 
     });
 
     revalidatePath(`/orders/${orderId}`);

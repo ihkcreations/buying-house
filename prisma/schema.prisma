@@ -93,30 +93,45 @@ enum OrderStatus {
   CLOSED
 }
 
-// --- 4. COSTING MODULE ---
+// --- 4. COSTING MODULE (Production Grade) ---
 model Costing {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @unique @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
-  // Components
-  fabricCostPerDzn  Float
-  trimsCostPerDzn   Float
-  cmCostPerDzn      Float
-  commercialCost    Float // Added this based on our review
-  logisticsCost     Float // Added this based on our review
+  // A. Direct Costs
+  fabricCostPerDzn   Float   @default(0)
+  trimsCostPerDzn    Float   @default(0) // Sum of breakdown
+  accessoriesBreakdown Json? // Store details: { thread: 0.5, poly: 0.1, etc. }
   
-  netFob            Float
-  margin            Float
+  printingCost       Float   @default(0)
+  embroideryCost     Float   @default(0)
+  washingCost        Float   @default(0)
+  cmCostPerDzn       Float   @default(0) // Making Charge
+
+  // B. Indirect Costs / Overheads
+  labTestCost        Float   @default(0)
+  inspectionCost     Float   @default(0)
+  samplingCost       Float   @default(0)
+  commercialCost     Float   @default(0)
+  logisticsCost      Float   @default(0)
   
-  isApproved        Boolean @default(false) // Admin control
+  // C. Pricing
+  totalCost          Float   @default(0) // A + B
+  profitMargin       Float   @default(0) // The Profit $
+  commissionPercent  Float   @default(0) // The Agency Fee %
+  
+  netFob             Float   @default(0) // Final Price Quote
+  
+  isApproved         Boolean @default(false)
+  updatedAt          DateTime @updatedAt
 }
 
 // --- 5. T&A MODULE ---
 model TimeAction {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @unique @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   // Milestones (Plan vs Actual)
   labDipPlan      DateTime?
@@ -139,7 +154,7 @@ model TimeAction {
 model FabricBooking {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   fabricName   String // "100% Cotton Jersey"
   yarnCount    String // "26/1 Combed" (Added based on review)
@@ -156,7 +171,7 @@ model FabricBooking {
 model Sample {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   type      SampleType // PROTO, FIT, PP
   version   Int        // 1, 2, 3 (To track resubmissions)
@@ -187,7 +202,7 @@ enum SampleStatus {
 model ProductionLog {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   date      DateTime
   
@@ -203,7 +218,7 @@ model ProductionLog {
 model ProformaInvoice {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @unique @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   piNumber  String
   date      DateTime
@@ -233,7 +248,7 @@ model ProformaInvoice {
 model SalesContract {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @unique @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   scNumber  String
   scDate    DateTime
@@ -243,7 +258,7 @@ model SalesContract {
 model CommercialDoc {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId   String   @db.ObjectId
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   name      String   // "L/C", "Bill of Lading"
   type      String   // "UPLOADED"

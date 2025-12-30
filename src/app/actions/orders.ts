@@ -3,6 +3,8 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth"; // Import auth
+import { headers } from "next/headers";
 
 export async function createOrder(data: any) {
   // 1. Extract data
@@ -51,4 +53,33 @@ export async function createOrder(data: any) {
   
   // 5. Redirect after success
   redirect("/orders/ongoing");
+}
+
+export async function deleteOrder(orderId: string) {
+  try {
+    // 1. Security Check: Get Session
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    const role = (session?.user as any)?.role;
+
+    // 2. Only ADMIN can delete Orders
+    if (role !== "admin") {
+        return { error: "Unauthorized. Only Admins can delete orders." };
+    }
+
+    // 3. Delete (Cascading handles the rest)
+    await db.order.delete({
+      where: { id: orderId },
+    });
+
+    revalidatePath("/orders/ongoing");
+    revalidatePath("/orders/all"); // Assuming you have this route
+    
+    return { success: "Order deleted successfully." };
+  } catch (error) {
+    console.error("Delete Error:", error);
+    return { error: "Failed to delete order." };
+  }
 }
