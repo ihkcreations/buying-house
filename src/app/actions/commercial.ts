@@ -110,7 +110,66 @@ export async function saveSC(orderId: string, formData: FormData) {
   }
 }
 
-export async function updateDocStatus(orderId: string, docName: string, status: string) {
-    // ... (Your existing Doc code)
-    return { success: "Doc Updated" };
+export async function updateDocStatus(orderId: string, docName: string, url: string) {
+  try {
+    // Check if doc exists, update it. If not, create it.
+    // Note: We search by docName + orderId. 
+    // Prisma composite keys or findFirst is needed if 'id' isn't known.
+    // Easier way: Use findFirst to get ID, then update/create.
+    
+    const existing = await db.commercialDoc.findFirst({
+        where: { orderId, name: docName }
+    });
+
+    if (existing) {
+        await db.commercialDoc.update({
+            where: { id: existing.id },
+            data: { url, status: "COMPLETED", type: "UPLOADED" }
+        });
+    } else {
+        await db.commercialDoc.create({
+            data: {
+                orderId,
+                name: docName,
+                url,
+                status: "COMPLETED",
+                type: "UPLOADED"
+            }
+        });
+    }
+
+    revalidatePath(`/commercial/orders/${orderId}`);
+    return { success: "Document Status Updated" };
+  } catch (error) {
+    return { error: "Failed to update doc" };
+  }
+}
+
+export async function createCommercialDoc(orderId: string, formData: FormData) {
+  try {
+    const type = formData.get("type") as string;
+    const refNo = formData.get("refNo") as string; // e.g. "Amendment 01"
+    const url = formData.get("url") as string; // URL from UploadThing
+
+    await db.commercialDoc.create({
+        data: {
+            orderId,
+            name: `${type} - ${refNo}`, // Store as "Master L/C - AMD 01"
+            type: "UPLOADED",
+            url,
+            status: "COMPLETED"
+        }
+    });
+
+    revalidatePath(`/commercial/orders/${orderId}`);
+    return { success: "Document added successfully" };
+  } catch (error) {
+    return { error: "Failed to add document" };
+  }
+}
+
+// Keep the delete function too
+export async function deleteCommercialDoc(id: string, orderId: string) {
+    await db.commercialDoc.delete({ where: { id } });
+    revalidatePath(`/commercial/orders/${orderId}`);
 }

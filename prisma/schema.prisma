@@ -304,9 +304,9 @@ model CommercialDoc {
 // --- BETTER AUTH MODELS ---
 
 model Session {
-  id        String   @id @map("_id") // Removed @db.ObjectId
-  userId    String   // Removed @db.ObjectId (Must match User.id type)
-  token     String
+  id        String   @id @map("_id")
+  userId    String
+  token     String   @unique
   expiresAt DateTime
   ipAddress String?
   userAgent String?
