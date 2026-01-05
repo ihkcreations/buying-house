@@ -78,12 +78,11 @@ const sidebarNav = [
       { title: "Business Overview", href: "/finance/overview", icon: LayoutDashboard },
     ],
   },
-  // --- UPDATED: User Management is now a direct link ---
   {
     title: "User Management",
-    href: "/users", // Direct link to the page
+    href: "/users",
     icon: Users,
-    type: "link",   // Changed from 'accordion'
+    type: "link",
     roles: ["admin"],
   },
 ];
@@ -142,9 +141,22 @@ export function AppSidebar() {
                 );
                 }
 
-                // RENDER ACCORDION
+                // --- LOGIC TO AUTO-OPEN ACCORDION ---
+                // If user is 'merchandiser' and menu title is 'Merchandiser', open it.
+                // If user is 'commercial' and menu title is 'Commercial', open it.
+                const shouldBeOpen = 
+                    (userRole === "merchandiser" && item.title === "Merchandiser") ||
+                    (userRole === "commercial" && item.title === "Commercial") ||
+                    (userRole === "finance" && item.title === "Finance");
+
                 return (
-                <Accordion key={index} type="single" collapsible className="w-full">
+                <Accordion 
+                    key={index} 
+                    type="single" 
+                    collapsible 
+                    className="w-full"
+                    defaultValue={shouldBeOpen ? item.title : undefined} // <--- THE FIX
+                >
                     <AccordionItem value={item.title} className="border-none">
                     <AccordionTrigger className="py-2 px-4 hover:bg-slate-50 rounded-md hover:no-underline">
                         <div className="flex items-center gap-3">
@@ -190,8 +202,10 @@ export function AppSidebar() {
         )}
       </ScrollArea>
 
-      <div className="border-t p-3 space-y-1">
+       <div className="border-t p-3 space-y-1">
+        
         {/* 1. MASTER DATA (Visible to Admin, Merch, Commercial) */}
+        {/* This was the logic we lost - restoring it now */}
         {["admin", "merchandiser", "commercial"].includes(userRole) && (
             <>
                 <Link href="/admin/buyers">
@@ -209,6 +223,7 @@ export function AppSidebar() {
             </>
         )}
 
+        {/* 2. SHARED LINKS (Visible to Everyone) */}
         <Link href="/settings">
             <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600">
                 <Settings className="h-4 w-4" />

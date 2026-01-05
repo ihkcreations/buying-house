@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Save, Printer, Building2, MapPin, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { PIDocument } from "@/components/pdf/pi-template"; // Ensure you created this file from previous step
 
 export function PIGenerator({ 
   order, 
@@ -22,9 +24,14 @@ export function PIGenerator({
   settings?: any 
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Fix hydration issues with PDF link
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // --- 1. ROW STATE MANAGEMENT ---
-  // Default first row based on Order Data
   const initialRow = {
       styleOrder: `${order.styleNo} / ${order.orderNo}`,
       article: "", 
@@ -35,14 +42,12 @@ export function PIGenerator({
       amount: order.totalValue
   };
 
-  // Load existing rows or start with one default row
   const [rows, setRows] = useState<any[]>(
       existingPI?.items && existingPI.items.length > 0 ? existingPI.items : [initialRow]
   );
 
-  // --- ACTIONS ---
   const addRow = () => {
-      setRows([...rows, { ...initialRow, qty: 0, amount: 0, article: "" }]); // Add empty clone
+      setRows([...rows, { ...initialRow, qty: 0, amount: 0, article: "" }]); 
   };
 
   const removeRow = (index: number) => {
@@ -55,12 +60,10 @@ export function PIGenerator({
       setRows(newRows);
   };
 
-  // Handle Input Change to update State (Critical for Math)
   const handleRowChange = (index: number, field: string, value: string) => {
       const newRows = [...rows];
       newRows[index] = { ...newRows[index], [field]: value };
       
-      // Auto-calculate Amount
       if (field === "qty" || field === "rate") {
           const q = parseFloat(newRows[index].qty) || 0;
           const r = parseFloat(newRows[index].rate) || 0;
@@ -69,7 +72,6 @@ export function PIGenerator({
       setRows(newRows);
   };
 
-  // Calculate Grand Total from Rows
   const grandTotal = rows.reduce((acc, row) => acc + (parseFloat(row.amount) || 0), 0);
 
   // --- DEFAULTS ---
@@ -81,7 +83,7 @@ export function PIGenerator({
     ? `${settings.bankName}\n${settings.bankAddress || ""}\nSWIFT: ${settings.swiftCode}\nA/C Name: ${settings.accountName}\nA/C No: ${settings.accountNumber}`
     : "TRUST BANK PLC\nDilkusha Corp Branch\nSWIFT: TBLBDDH";
 
-  const t = existingPI || {}; // Terms
+  const t = existingPI || {}; 
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
@@ -153,49 +155,17 @@ export function PIGenerator({
                       {rows.map((row, index) => (
                           <TableRow key={index}>
                               <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                              
+                              <TableCell><Input name="item_style" value={row.styleOrder} onChange={(e) => handleRowChange(index, 'styleOrder', e.target.value)} className="bg-slate-50/50" /></TableCell>
+                              <TableCell><Input name="item_article" value={row.article} onChange={(e) => handleRowChange(index, 'article', e.target.value)} placeholder="ART..." /></TableCell>
                               <TableCell>
-                                  <Input name="item_style" value={row.styleOrder} onChange={(e) => handleRowChange(index, 'styleOrder', e.target.value)} className="bg-slate-50/50" />
+                                    <Textarea name="item_desc" value={row.description} onChange={(e) => handleRowChange(index, 'description', e.target.value)} className="min-h-[50px] resize-none text-xs" />
                               </TableCell>
-                              
+                              <TableCell><Input type="date" name="item_shipdate" value={row.shippingDate} onChange={(e) => handleRowChange(index, 'shippingDate', e.target.value)} className="text-xs" /></TableCell>
+                              <TableCell><Input type="number" name="item_qty" value={row.qty} onChange={(e) => handleRowChange(index, 'qty', e.target.value)} className="text-right" /></TableCell>
+                              <TableCell><Input type="number" name="item_rate" value={row.rate} onChange={(e) => handleRowChange(index, 'rate', e.target.value)} className="text-right" /></TableCell>
+                              <TableCell className="text-right font-bold"><Input name="item_amount" value={row.amount} readOnly className="text-right font-bold border-none shadow-none bg-transparent" /></TableCell>
                               <TableCell>
-                                  <Input name="item_article" value={row.article} onChange={(e) => handleRowChange(index, 'article', e.target.value)} placeholder="ART..." />
-                              </TableCell>
-                              
-                              <TableCell>
-                                    <Textarea 
-                                        name="item_desc" 
-                                        value={row.description} 
-                                        onChange={(e) => handleRowChange(index, 'description', e.target.value)}
-                                        className="min-h-[50px] resize-none text-xs" 
-                                    />
-                              </TableCell>
-                              
-                              <TableCell>
-                                  <Input type="date" name="item_shipdate" value={row.shippingDate} onChange={(e) => handleRowChange(index, 'shippingDate', e.target.value)} className="text-xs" />
-                              </TableCell>
-                              
-                              <TableCell>
-                                  <Input type="number" name="item_qty" value={row.qty} onChange={(e) => handleRowChange(index, 'qty', e.target.value)} className="text-right" />
-                              </TableCell>
-                              
-                              <TableCell>
-                                  <Input type="number" name="item_rate" value={row.rate} onChange={(e) => handleRowChange(index, 'rate', e.target.value)} className="text-right" />
-                              </TableCell>
-                              
-                              <TableCell className="text-right font-bold">
-                                  <Input 
-                                    name="item_amount" 
-                                    value={row.amount} 
-                                    readOnly 
-                                    className="text-right font-bold border-none shadow-none bg-transparent" 
-                                  />
-                              </TableCell>
-
-                              <TableCell>
-                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(index)} className="text-slate-400 hover:text-red-600">
-                                      <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(index)} className="text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></Button>
                               </TableCell>
                           </TableRow>
                       ))}
@@ -204,7 +174,7 @@ export function PIGenerator({
           </CardContent>
       </Card>
 
-      {/* 3. TERMS & CONDITIONS */}
+      {/* 3. TERMS & CONDITIONS (12 Fields) */}
       <Card>
           <CardHeader><CardTitle>Terms & Conditions</CardTitle></CardHeader>
           <CardContent className="p-0">
@@ -217,13 +187,7 @@ export function PIGenerator({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow>
-                        <TableCell>01</TableCell>
-                        <TableCell className="font-medium">Payment</TableCell>
-                        <TableCell><Input name="term_payment" defaultValue={t.payment || settings?.defaultPaymentTerms || "Irrevocable L/C at sight"} /></TableCell>
-                    </TableRow>
-                    {/* ... (Repeat for other terms same as before) ... */}
-                    {/* Add the other 11 rows here from previous code */}
+                    <TableRow><TableCell>01</TableCell><TableCell className="font-medium">Payment</TableCell><TableCell><Input name="term_payment" defaultValue={t.payment || settings?.defaultPaymentTerms || "Irrevocable L/C at sight"} /></TableCell></TableRow>
                     <TableRow><TableCell>02</TableCell><TableCell className="font-medium">B/L Clause</TableCell><TableCell><Input name="term_bl" defaultValue={t.blClause || "Negotiable against documents"} /></TableCell></TableRow>
                     <TableRow><TableCell>03</TableCell><TableCell className="font-medium">Tolerance</TableCell><TableCell><Input name="term_tolerance" defaultValue={t.tolerance || "+/- 5% in Quantity and Amount"} /></TableCell></TableRow>
                     <TableRow><TableCell>04</TableCell><TableCell className="font-medium">Freight Term</TableCell><TableCell><Input name="term_freight" defaultValue={t.freightTerm || "Freight Collect"} /></TableCell></TableRow>
@@ -240,15 +204,32 @@ export function PIGenerator({
           </CardContent>
       </Card>
 
-      {/* 4. FOOTER */}
+      {/* 4. FOOTER & PDF DOWNLOAD */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 p-4 bg-white border-t flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
           <div className="text-sm text-slate-500 pl-4">
               Total Value: <span className="font-bold text-slate-900 text-lg">${grandTotal.toLocaleString()}</span>
           </div>
           <div className="flex gap-3 pr-4">
-              <Button type="button" variant="outline">
-                  <Printer className="w-4 h-4 mr-2" /> Print PDF
-              </Button>
+              
+              {/* PDF DOWNLOAD BUTTON */}
+              {isClient && existingPI ? (
+                <PDFDownloadLink
+                    document={<PIDocument order={order} pi={existingPI} settings={settings} />}
+                    fileName={`PI-${existingPI.piNumber}.pdf`}
+                >
+                    {({ loading }) => (
+                        <Button type="button" variant="outline" disabled={loading}>
+                            <Printer className="w-4 h-4 mr-2" /> 
+                            {loading ? "Generating..." : "Download PDF"}
+                        </Button>
+                    )}
+                </PDFDownloadLink>
+              ) : (
+                <Button type="button" variant="outline" disabled title="Save first to enable printing">
+                    <Printer className="w-4 h-4 mr-2" /> Save to Print
+                </Button>
+              )}
+
               <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 min-w-[150px]">
                   <Save className="w-4 h-4 mr-2" /> 
                   {isLoading ? "Saving..." : "Save PI"}
