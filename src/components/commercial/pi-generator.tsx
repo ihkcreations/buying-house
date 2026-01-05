@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { PIDocument } from "@/components/pdf/pi-template"; // Ensure you created this file from previous step
+import { PIDocument } from "@/components/pdf/pi-template";
 
 export function PIGenerator({ 
   order, 
@@ -26,12 +27,40 @@ export function PIGenerator({
   const [isLoading, setIsLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // Fix hydration issues with PDF link
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  useEffect(() => { setIsClient(true); }, []);
 
-  // --- 1. ROW STATE MANAGEMENT ---
+  // --- ADDRESS LOGIC ---
+  const addresses = settings?.addresses || [];
+  
+  // Helper to format the full string
+  const buildAddressString = (addrText: string) => {
+      // If the address text already contains company name, don't double add it.
+      // But usually settings.companyName is separate.
+      return `${settings?.companyName || "P.I. OCEAN TEX"}\n${addrText}\n${settings?.contactPhone || ""}`;
+  };
+
+  // 1. Determine Initial Value
+  // Priority: Saved PI Value > Default from Settings > Hardcoded Fallback
+  const getInitialAddress = () => {
+      if (existingPI?.supplierAddress) return existingPI.supplierAddress;
+      
+      const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
+      if (defaultAddr) return buildAddressString(defaultAddr.addressText);
+      
+      return "P.I. OCEAN TEX\nDhaka, Bangladesh";
+  };
+
+  const [supplierAddress, setSupplierAddress] = useState(getInitialAddress());
+
+  // 2. Handle Dropdown Change
+  const handleAddressChange = (addressId: string) => {
+      const selected = addresses.find((a: any) => a.id === addressId);
+      if (selected) {
+          setSupplierAddress(buildAddressString(selected.addressText));
+      }
+  };
+
+  // --- ROW LOGIC (Same as before) ---
   const initialRow = {
       styleOrder: `${order.styleNo} / ${order.orderNo}`,
       article: "", 
@@ -46,15 +75,10 @@ export function PIGenerator({
       existingPI?.items && existingPI.items.length > 0 ? existingPI.items : [initialRow]
   );
 
-  const addRow = () => {
-      setRows([...rows, { ...initialRow, qty: 0, amount: 0, article: "" }]); 
-  };
-
+  const addRow = () => setRows([...rows, { ...initialRow, qty: 0, amount: 0, article: "" }]);
+  
   const removeRow = (index: number) => {
-      if (rows.length === 1) {
-          toast.error("PI must have at least one item.");
-          return;
-      }
+      if (rows.length === 1) return toast.error("At least one item required");
       const newRows = [...rows];
       newRows.splice(index, 1);
       setRows(newRows);
@@ -63,7 +87,6 @@ export function PIGenerator({
   const handleRowChange = (index: number, field: string, value: string) => {
       const newRows = [...rows];
       newRows[index] = { ...newRows[index], [field]: value };
-      
       if (field === "qty" || field === "rate") {
           const q = parseFloat(newRows[index].qty) || 0;
           const r = parseFloat(newRows[index].rate) || 0;
@@ -74,11 +97,7 @@ export function PIGenerator({
 
   const grandTotal = rows.reduce((acc, row) => acc + (parseFloat(row.amount) || 0), 0);
 
-  // --- DEFAULTS ---
-  const defaultSupplierInfo = settings 
-    ? `${settings.companyName}\n${settings.companyAddress}\n${settings.contactPhone || ""}`
-    : "P.I. OCEAN TEX\nDhaka, Bangladesh";
-
+  // --- BANK DEFAULTS ---
   const defaultBankDetails = settings
     ? `${settings.bankName}\n${settings.bankAddress || ""}\nSWIFT: ${settings.swiftCode}\nA/C Name: ${settings.accountName}\nA/C No: ${settings.accountNumber}`
     : "TRUST BANK PLC\nDilkusha Corp Branch\nSWIFT: TBLBDDH";
@@ -112,15 +131,45 @@ export function PIGenerator({
             </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 border rounded bg-slate-50 h-full">
-                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2"><MapPin className="w-3 h-3" /> Beneficiary / Supplier</Label>
-                <div className="text-sm text-slate-700 whitespace-pre-wrap font-medium">{defaultSupplierInfo}</div>
+            
+            {/* BOX 1: SUPPLIER (With Dropdown) */}
+            <div className="p-4 border rounded bg-slate-50 h-full relative">
+                <div className="flex justify-between items-center mb-2">
+                    <Label className="text-xs text-slate-500 uppercase flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> Beneficiary / Supplier
+                    </Label>
+                    {/* Address Selector */}
+                    {addresses.length > 0 && (
+                        <Select onValueChange={handleAddressChange}>
+                            <SelectTrigger className="h-6 text-[10px] w-[130px] bg-white border-slate-200">
+                                <SelectValue placeholder="Change Office" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {addresses.map((a: any) => (
+                                    <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                </div>
+                
+                {/* Editable Text Area */}
+                <Textarea 
+                    name="vendorAddress" // Server reads this
+                    value={supplierAddress}
+                    onChange={(e) => setSupplierAddress(e.target.value)}
+                    className="text-sm bg-transparent border-none shadow-none resize-none p-0 h-[100px] focus-visible:ring-0 leading-relaxed font-medium"
+                />
             </div>
+
+            {/* BOX 2: BUYER */}
             <div className="p-4 border rounded bg-slate-50 h-full">
                 <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2"><Building2 className="w-3 h-3" /> Applicant / Buyer</Label>
                 <div className="font-bold text-slate-900">{order.buyer.name}</div>
                 <div className="text-sm text-slate-600 mt-1">{order.buyer.country}</div>
             </div>
+
+            {/* BOX 3: BANK */}
             <div className="p-4 border rounded bg-yellow-50/50 border-yellow-100 h-full">
                 <Label className="text-xs text-yellow-700 uppercase flex items-center gap-1 mb-2"><Building2 className="w-3 h-3" /> Advising Bank</Label>
                 <Textarea name="bankDetails" defaultValue={existingPI?.bankDetails || defaultBankDetails} className="mt-1 h-[120px] text-sm bg-white resize-none font-mono" />
@@ -128,7 +177,7 @@ export function PIGenerator({
         </CardContent>
       </Card>
 
-      {/* 2. DYNAMIC GOODS TABLE */}
+      {/* 2. DYNAMIC GOODS TABLE (Same as previous) */}
       <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Description of Goods</CardTitle>
@@ -157,16 +206,12 @@ export function PIGenerator({
                               <TableCell className="font-medium text-center">{index + 1}</TableCell>
                               <TableCell><Input name="item_style" value={row.styleOrder} onChange={(e) => handleRowChange(index, 'styleOrder', e.target.value)} className="bg-slate-50/50" /></TableCell>
                               <TableCell><Input name="item_article" value={row.article} onChange={(e) => handleRowChange(index, 'article', e.target.value)} placeholder="ART..." /></TableCell>
-                              <TableCell>
-                                    <Textarea name="item_desc" value={row.description} onChange={(e) => handleRowChange(index, 'description', e.target.value)} className="min-h-[50px] resize-none text-xs" />
-                              </TableCell>
+                              <TableCell><Textarea name="item_desc" value={row.description} onChange={(e) => handleRowChange(index, 'description', e.target.value)} className="min-h-[50px] resize-none text-xs" /></TableCell>
                               <TableCell><Input type="date" name="item_shipdate" value={row.shippingDate} onChange={(e) => handleRowChange(index, 'shippingDate', e.target.value)} className="text-xs" /></TableCell>
                               <TableCell><Input type="number" name="item_qty" value={row.qty} onChange={(e) => handleRowChange(index, 'qty', e.target.value)} className="text-right" /></TableCell>
                               <TableCell><Input type="number" name="item_rate" value={row.rate} onChange={(e) => handleRowChange(index, 'rate', e.target.value)} className="text-right" /></TableCell>
                               <TableCell className="text-right font-bold"><Input name="item_amount" value={row.amount} readOnly className="text-right font-bold border-none shadow-none bg-transparent" /></TableCell>
-                              <TableCell>
-                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(index)} className="text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></Button>
-                              </TableCell>
+                              <TableCell><Button type="button" variant="ghost" size="icon" onClick={() => removeRow(index)} className="text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></Button></TableCell>
                           </TableRow>
                       ))}
                   </TableBody>
@@ -174,7 +219,7 @@ export function PIGenerator({
           </CardContent>
       </Card>
 
-      {/* 3. TERMS & CONDITIONS (12 Fields) */}
+      {/* 3. TERMS (Same as previous) */}
       <Card>
           <CardHeader><CardTitle>Terms & Conditions</CardTitle></CardHeader>
           <CardContent className="p-0">
@@ -188,6 +233,7 @@ export function PIGenerator({
                 </TableHeader>
                 <TableBody>
                     <TableRow><TableCell>01</TableCell><TableCell className="font-medium">Payment</TableCell><TableCell><Input name="term_payment" defaultValue={t.payment || settings?.defaultPaymentTerms || "Irrevocable L/C at sight"} /></TableCell></TableRow>
+                    {/* ... other rows ... */}
                     <TableRow><TableCell>02</TableCell><TableCell className="font-medium">B/L Clause</TableCell><TableCell><Input name="term_bl" defaultValue={t.blClause || "Negotiable against documents"} /></TableCell></TableRow>
                     <TableRow><TableCell>03</TableCell><TableCell className="font-medium">Tolerance</TableCell><TableCell><Input name="term_tolerance" defaultValue={t.tolerance || "+/- 5% in Quantity and Amount"} /></TableCell></TableRow>
                     <TableRow><TableCell>04</TableCell><TableCell className="font-medium">Freight Term</TableCell><TableCell><Input name="term_freight" defaultValue={t.freightTerm || "Freight Collect"} /></TableCell></TableRow>
@@ -204,14 +250,12 @@ export function PIGenerator({
           </CardContent>
       </Card>
 
-      {/* 4. FOOTER & PDF DOWNLOAD */}
+      {/* 4. FOOTER */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 p-4 bg-white border-t flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
           <div className="text-sm text-slate-500 pl-4">
               Total Value: <span className="font-bold text-slate-900 text-lg">${grandTotal.toLocaleString()}</span>
           </div>
           <div className="flex gap-3 pr-4">
-              
-              {/* PDF DOWNLOAD BUTTON */}
               {isClient && existingPI ? (
                 <PDFDownloadLink
                     document={<PIDocument order={order} pi={existingPI} settings={settings} />}
@@ -219,20 +263,15 @@ export function PIGenerator({
                 >
                     {({ loading }) => (
                         <Button type="button" variant="outline" disabled={loading}>
-                            <Printer className="w-4 h-4 mr-2" /> 
-                            {loading ? "Generating..." : "Download PDF"}
+                            <Printer className="w-4 h-4 mr-2" /> {loading ? "Generating..." : "Download PDF"}
                         </Button>
                     )}
                 </PDFDownloadLink>
               ) : (
-                <Button type="button" variant="outline" disabled title="Save first to enable printing">
-                    <Printer className="w-4 h-4 mr-2" /> Save to Print
-                </Button>
+                <Button type="button" variant="outline" disabled><Printer className="w-4 h-4 mr-2" /> Save to Print</Button>
               )}
-
               <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 min-w-[150px]">
-                  <Save className="w-4 h-4 mr-2" /> 
-                  {isLoading ? "Saving..." : "Save PI"}
+                  <Save className="w-4 h-4 mr-2" /> {isLoading ? "Saving..." : "Save PI"}
               </Button>
           </div>
       </div>

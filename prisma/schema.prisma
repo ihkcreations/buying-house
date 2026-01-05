@@ -238,6 +238,7 @@ model ProformaInvoice {
   
   piNumber  String
   date      DateTime
+  supplierAddress String?
   bankDetails String
   
   // --- THE 12 TERMS & CONDITIONS ---
@@ -364,26 +365,36 @@ model Verification {
 // --- 11. GLOBAL SETTINGS ---
 model CompanySettings {
   id        String   @id @map("_id") 
-  // We will always use the ID "main_settings" to keep it unique
   
   // Tab 1: General
   companyName    String   @default("P.I. OCEAN TEX")
-  companyAddress String   @default("Dhaka, Bangladesh")
   contactPhone   String?
   contactEmail   String?
   
-  // Tab 2: Banking (The Advising Bank)
+  // Relations
+  addresses      OfficeAddress[] // <--- ADD THIS
+  
+  // ... Keep existing Bank & Defaults fields ...
   bankName       String?
   bankAddress    String?
   swiftCode      String?
   accountNumber  String?
-  accountName    String?  // Beneficiary Name
-  
-  // Tab 3: Defaults
+  accountName    String?
   defaultPaymentTerms String?
   defaultPort         String?
   
   updatedAt DateTime @updatedAt
+}
+
+// --- NEW MODEL ---
+model OfficeAddress {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  settingsId  String   @map("settings_id")
+  settings    CompanySettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  
+  label       String   // e.g. "Head Office", "London Branch"
+  addressText String   // The full address block
+  isDefault   Boolean  @default(false)
 }
 
 // --- 12. OCS (ORDER COST SHEET / ACTUALS) ---

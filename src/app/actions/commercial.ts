@@ -36,6 +36,7 @@ export async function savePI(orderId: string, formData: FormData) {
     const payload = {
         piNumber,
         date: new Date(dateStr),
+        supplierAddress: formData.get("vendorAddress") as string,
         bankDetails,
         items: items, // JSON Array
         

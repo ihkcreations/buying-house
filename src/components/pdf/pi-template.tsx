@@ -58,6 +58,9 @@ export const PIDocument = ({ order, pi, settings }: { order: any, pi: any, setti
   const totalAmount = items.reduce((acc: number, item: any) => acc + (item.amount || 0), 0);
   const totalQty = items.reduce((acc: number, item: any) => acc + (item.qty || 0), 0);
 
+  const supplierText = pi.supplierAddress || 
+    `${settings?.companyName || ""}\n${settings?.companyAddress || ""}\n${settings?.contactPhone || ""}`;
+
   // Initialize Number to Words Converter
   const toWords = new ToWords({
     localeCode: 'en-US',
@@ -94,10 +97,10 @@ export const PIDocument = ({ order, pi, settings }: { order: any, pi: any, setti
         
         {/* HEADER */}
         <View style={styles.header}>
-            <View>
+            <View style={{ width: '60%' }}>
+                {/* Use the specific text saved in the PI */}
                 <Text style={styles.companyName}>{settings?.companyName || "P.I. OCEAN TEX"}</Text>
-                <Text style={styles.companyDetails}>{settings?.companyAddress || "Dhaka, Bangladesh"}</Text>
-                <Text style={styles.companyDetails}>Phone: {settings?.contactPhone}</Text>
+                <Text style={styles.companyDetails}>{supplierText}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.piTitle}>PROFORMA INVOICE</Text>
@@ -110,8 +113,8 @@ export const PIDocument = ({ order, pi, settings }: { order: any, pi: any, setti
         <View style={styles.grid3}>
             <View style={styles.box}>
                 <Text style={styles.boxTitle}>BENEFICIARY</Text>
-                <Text>{settings?.companyName}</Text>
-                <Text>{settings?.companyAddress}</Text>
+                {/* Use the specific text here too */}
+                <Text>{supplierText}</Text>
             </View>
             <View style={styles.box}>
                 <Text style={styles.boxTitle}>APPLICANT (BUYER)</Text>
