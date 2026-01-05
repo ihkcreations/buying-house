@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth"; 
 import { headers } from "next/headers";
+import { logActivity } from "@/lib/logger";
 
 // --- BUYER ACTIONS ---
 export async function createBuyer(formData: FormData) {
@@ -18,6 +19,9 @@ export async function createBuyer(formData: FormData) {
     await db.buyer.create({
       data: { name, country },
     });
+
+    await logActivity("CREATED_BUYER", `Added new buyer: ${name}`);
+
     revalidatePath("/admin/buyers");
     return { success: "Buyer created successfully" };
   } catch (error) {
@@ -35,6 +39,9 @@ export async function updateBuyer(id: string, formData: FormData) {
       where: { id },
       data: { name, country },
     });
+
+    await logActivity("UPDATED_BUYER", `Updated buyer details: ${name}`)
+
     revalidatePath("/admin/buyers");
     return { success: "Buyer updated successfully" };
   } catch (error) {
@@ -51,6 +58,9 @@ export async function deleteBuyer(id: string) {
     }
 
     await db.buyer.delete({ where: { id } });
+
+    await logActivity("DELETED_BUYER", `Deleted buyer: ${name}`);
+
     revalidatePath("/admin/buyers");
     return { success: "Buyer deleted successfully" };
   } catch (error) {
@@ -71,6 +81,9 @@ export async function createFactory(formData: FormData) {
     await db.factory.create({
       data: { name, address },
     });
+
+    await logActivity("CREATED_FACTORY", `Added new factory: ${name}`);
+
     revalidatePath("/admin/factories");
     return { success: "Factory created successfully" };
   } catch (error) {
@@ -88,6 +101,9 @@ export async function updateFactory(id: string, formData: FormData) {
       where: { id },
       data: { name, address },
     });
+
+    await logActivity("UPDATED_FACTORY", `Updated factory details: ${name}`);
+
     revalidatePath("/admin/factories");
     return { success: "Factory updated successfully" };
   } catch (error) {
@@ -104,6 +120,9 @@ export async function deleteFactory(id: string) {
     }
 
     await db.factory.delete({ where: { id } });
+
+    await logActivity("DELETED_FACTORY", `Deleted factory: ${name}`);
+    
     revalidatePath("/admin/factories");
     return { success: "Factory deleted successfully" };
   } catch (error) {
