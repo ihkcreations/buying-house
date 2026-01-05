@@ -2,162 +2,178 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle, FileText, ExternalLink, Loader2, Trash2 } from "lucide-react";
-import { updateDocStatus } from "@/app/actions/commercial";
+import { FileText, ExternalLink, Plus, Trash2, Loader2, Paperclip, CheckCircle } from "lucide-react";
+import { createCommercialDoc, deleteCommercialDoc } from "@/app/actions/commercial";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { UploadButton } from "@/utils/uploadthing"; 
 import Link from "next/link";
 
-const REQUIRED_DOCS = [
-    { name: "Purchase Order (P.O)", stage: "Pre-Production" },
-    { name: "Master L/C", stage: "Banking" },
-    { name: "Utilization Declaration (U.D)", stage: "Government" },
-    { name: "Packing List", stage: "Shipment" },
-    { name: "Commercial Invoice", stage: "Shipment" },
-    { name: "Bill of Lading (B/L)", stage: "Shipment" },
-    { name: "Certificate of Origin (CO)", stage: "Shipment" },
+const DOC_TYPES = [
+    "Master L/C", "L/C Amendment", "Sales Contract", "Purchase Order", 
+    "Commercial Invoice", "Packing List", "Bill of Lading", "Certificate of Origin", "Inspection Report", "Other"
 ];
 
 export function DocManager({ orderId, docs }: { orderId: string, docs: any[] }) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  
-  // Track which specific document is currently uploading
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const getDoc = (name: string) => docs.find(d => d.name === name);
+  // Form State
+  const [docType, setDocType] = useState("Master L/C");
+  const [refNo, setRefNo] = useState("");
 
-  const handleUploadComplete = async (docName: string, url: string) => {
-      setIsUpdating(true);
-      const result = await updateDocStatus(orderId, docName, url);
-      if(result.success) {
-          toast.success(`${docName} uploaded successfully!`);
-      } else {
-          toast.error("Database update failed.");
+  const handleSave = async () => {
+      if (!uploadedUrl || !refNo) {
+          toast.error("Please upload a file and enter a Reference No.");
+          return;
       }
-      setIsUpdating(false);
-      setUploadingDoc(null); // Reset state
+      setIsSaving(true);
+      const formData = new FormData();
+      formData.append("type", docType);
+      formData.append("refNo", refNo);
+      formData.append("url", uploadedUrl);
+
+      const result = await createCommercialDoc(orderId, formData);
+      if (result.success) {
+          toast.success("Document added!");
+          setOpen(false);
+          setUploadedUrl(null);
+          setRefNo("");
+      } else {
+          toast.error("Failed to save.");
+      }
+      setIsSaving(false);
   };
 
-  return (
-    <Card className="relative">
-        {/* --- BLOCKING OVERLAY --- */}
-        {uploadingDoc && (
-            <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center backdrop-blur-[1px] rounded-lg">
-                <div className="bg-white border p-4 rounded-lg shadow-xl flex flex-col items-center gap-3">
-                    <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-                    <div className="text-center">
-                        <p className="font-bold text-slate-900">Uploading {uploadingDoc}...</p>
-                        <p className="text-xs text-slate-500">Please do not switch tabs.</p>
-                    </div>
-                </div>
-            </div>
-        )}
-        <CardHeader>
-            <CardTitle>Document Vault</CardTitle>
-            <CardDescription>Upload official PDF/Image documents. Maximum 4MB.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Document Name</TableHead>
-                        <TableHead>Stage</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {REQUIRED_DOCS.map((docItem, idx) => {
-                        const existingDoc = getDoc(docItem.name);
-                        const isUploaded = !!existingDoc;
-                        
-                        // Check if THIS specific row is uploading
-                        const isThisUploading = uploadingDoc === docItem.name;
-                        // Check if ANY row is uploading (to disable others)
-                        const isAnyUploading = uploadingDoc !== null;
+  const handleDelete = async (id: string) => {
+      if (confirm("Delete this document permanently?")) {
+          await deleteCommercialDoc(id, orderId);
+          toast.success("Deleted");
+      }
+  };
 
-                        return (
-                            <TableRow key={idx}>
-                                <TableCell className="font-medium flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-slate-400" />
-                                    {docItem.name}
-                                </TableCell>
-                                <TableCell className="text-slate-500 text-xs">{docItem.stage}</TableCell>
-                                
-                                <TableCell className="text-center">
-                                    {isUploaded ? (
-                                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 pointer-events-none">
-                                            Uploaded
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 pointer-events-none">
-                                            {isThisUploading ? "Uploading..." : "Pending"}
-                                        </Badge>
-                                    )}
-                                </TableCell>
-                                
-                                <TableCell className="text-right">
-                                    {isUploaded ? (
-                                        <div className="flex justify-end gap-2">
-                                            <Link href={existingDoc.url} target="_blank">
-                                                <Button size="sm" variant="ghost" className="text-blue-600 gap-1">
-                                                    <ExternalLink className="w-4 h-4" /> View
-                                                </Button>
-                                            </Link>
-                                        </div>
-                                    ) : (
-                                        <div className="flex justify-end relative">
-                                            {/* 
-                                                If another row is uploading, disable this row visually.
-                                                UploadThing doesn't expose a simple 'disabled' prop easily, 
-                                                so we conditionally render or mask it.
-                                            */}
-                                            {isAnyUploading && !isThisUploading ? (
-                                                <Button size="sm" variant="ghost" disabled className="text-slate-300">
-                                                    Wait...
-                                                </Button>
-                                            ) : (
-                                                <UploadButton
-                                                    endpoint="commercialDoc"
-                                                    onUploadBegin={() => {
-                                                        setUploadingDoc(docItem.name); // START LOADING
-                                                    }}
-                                                    onClientUploadComplete={(res) => {
-                                                        if(res?.[0]) handleUploadComplete(docItem.name, res[0].url);
-                                                    }}
-                                                    onUploadError={(error: Error) => {
-                                                        toast.error(`Upload failed: ${error.message}`);
-                                                        setUploadingDoc(null); // RESET ON ERROR
-                                                    }}
-                                                    appearance={{
-                                                        button: "bg-slate-900 text-white text-xs h-8 px-4 rounded-md hover:bg-slate-800 focus-within:ring-0 transition-all",
-                                                        allowedContent: "hidden"
-                                                    }}
-                                                    content={{
-                                                        button({ ready, isUploading }) {
-                                                            if (isUploading) return (
-                                                                <div className="flex items-center gap-1">
-                                                                    <Loader2 className="h-3 w-3 animate-spin" /> 
-                                                                    <span className="text-[10px]">Uploading...</span>
-                                                                </div>
-                                                            );
-                                                            if (ready) return <div>Upload</div>;
-                                                            return "Loading...";
-                                                        }
-                                                    }}
-                                                />
-                                            )}
-                                        </div>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
+  // Helper to group docs
+  const getDocsByType = (typeGroup: string[]) => docs.filter(d => typeGroup.some(t => d.name.startsWith(t)));
+
+  const bankingDocs = getDocsByType(["Master L/C", "L/C Amendment", "Sales Contract", "Purchase Order"]);
+  const shippingDocs = getDocsByType(["Commercial Invoice", "Packing List", "Bill of Lading"]);
+  const otherDocs = docs.filter(d => !bankingDocs.includes(d) && !shippingDocs.includes(d));
+
+  const renderTable = (title: string, list: any[]) => (
+      <div className="mb-8">
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">{title}</h3>
+          <div className="border rounded-md bg-white overflow-hidden">
+              <Table>
+                  <TableHeader>
+                      <TableRow className="bg-slate-50">
+                          <TableHead>Document Name</TableHead>
+                          <TableHead>Uploaded Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {list.length === 0 ? (
+                          <TableRow>
+                              <TableCell colSpan={3} className="text-center py-6 text-slate-400 italic">No documents yet.</TableCell>
+                          </TableRow>
+                      ) : (
+                          list.map((doc) => (
+                              <TableRow key={doc.id}>
+                                  <TableCell className="font-medium flex items-center gap-2">
+                                      <FileText className="w-4 h-4 text-blue-500" />
+                                      {doc.name}
+                                  </TableCell>
+                                  <TableCell className="text-slate-500 text-xs">
+                                      {new Date(doc.createdAt).toLocaleDateString()}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                      <div className="flex justify-end gap-2">
+                                          <Link href={doc.url} target="_blank">
+                                              <Button size="sm" variant="outline" className="h-8 gap-1">
+                                                  <ExternalLink className="w-3 h-3" /> View
+                                              </Button>
+                                          </Link>
+                                          <Button size="sm" variant="ghost" onClick={() => handleDelete(doc.id)} className="h-8 w-8 p-0 text-slate-400 hover:text-red-600">
+                                              <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                      </div>
+                                  </TableCell>
+                              </TableRow>
+                          ))
+                      )}
+                  </TableBody>
+              </Table>
+          </div>
+      </div>
+  );
+
+  return (
+    <Card className="bg-slate-50/50">
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle>Document Repository</CardTitle>
+                <CardDescription>Manage all shipping and banking files.</CardDescription>
+            </div>
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                        <Plus className="w-4 h-4 mr-2" /> Add Document
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Upload New Document</DialogTitle></DialogHeader>
+                    <div className="space-y-4 mt-2">
+                        <div className="space-y-2">
+                            <Label>Document Type</Label>
+                            <Select value={docType} onValueChange={setDocType}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {DOC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Reference No / Note</Label>
+                            <Input value={refNo} onChange={(e) => setRefNo(e.target.value)} placeholder="e.g. Amendment 02" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>File Attachment (PDF/Image)</Label>
+                            {uploadedUrl ? (
+                                <div className="flex items-center gap-2 p-2 border rounded bg-green-50 text-green-700 text-sm">
+                                    <CheckCircle className="w-4 h-4" /> File Ready
+                                    <Button variant="ghost" size="sm" onClick={() => setUploadedUrl(null)} className="ml-auto text-xs h-6">Change</Button>
+                                </div>
+                            ) : (
+                                <div className="border-2 border-dashed rounded-md p-6 flex justify-center bg-slate-400">
+                                    <UploadButton
+                                        
+                                        endpoint="commercialDoc"
+                                        onClientUploadComplete={(res) => {
+                                            if(res?.[0]) setUploadedUrl(res[0].url);
+                                        }}
+                                        onUploadError={(error: Error) => toast.error(error.message)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <Button onClick={handleSave} disabled={isSaving || !uploadedUrl} className="w-full bg-slate-900">
+                            {isSaving ? "Saving..." : "Save Document"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </CardHeader>
+        <CardContent>
+            {renderTable("Banking & Contracts", bankingDocs)}
+            {renderTable("Shipping & Customs", shippingDocs)}
+            {renderTable("Certificates & Others", otherDocs)}
         </CardContent>
     </Card>
   );
