@@ -6,34 +6,32 @@ import { logActivity } from "@/lib/logger";
 
 export async function saveCosting(orderId: string, data: any) {
   try {
-    // 1. Calculate Trims Total from Breakdown
+    // 1. Fetch Existing Data (The "Before" State)
+    const existing = await db.costing.findUnique({
+      where: { orderId },
+    });
+
+    // 2. Prepare New Payload (The "After" State)
     const accessories = data.accessoriesBreakdown || {};
     const trimsTotal = Object.values(accessories).reduce((a: number, b: any) => a + (parseFloat(b) || 0), 0);
 
-    // 2. Prepare Payload
     const payload = {
-      // Direct
       fabricCostPerDzn: parseFloat(data.fabricCost),
-      trimsCostPerDzn: trimsTotal, // Auto-calculated
+      trimsCostPerDzn: trimsTotal,
       accessoriesBreakdown: accessories,
       printingCost: parseFloat(data.printingCost) || 0,
       embroideryCost: parseFloat(data.embroideryCost) || 0,
       washingCost: parseFloat(data.washingCost) || 0,
       cmCostPerDzn: parseFloat(data.cmCost) || 0,
-
-      // Indirect
       labTestCost: parseFloat(data.labTestCost) || 0,
       inspectionCost: parseFloat(data.inspectionCost) || 0,
       samplingCost: parseFloat(data.samplingCost) || 0,
       commercialCost: parseFloat(data.commercialCost) || 0,
       logisticsCost: parseFloat(data.logisticsCost) || 0,
-
-      // Pricing
       totalCost: parseFloat(data.totalCost),
-      profitMargin: parseFloat(data.profitMargin),
+      profitMargin: parseFloat(data.profitMargin), // New Profit
       commissionPercent: parseFloat(data.commissionPercent) || 0,
       netFob: parseFloat(data.netFob),
-      
       isApproved: false, 
     };
 
@@ -47,13 +45,31 @@ export async function saveCosting(orderId: string, data: any) {
       },
     });
     
-    // Update Order Status
     await db.order.update({
         where: { id: orderId },
         data: { status: "COSTING_APPROVED" } 
     });
-    
-    await logActivity("UPDATED_COSTING", "Updated Costing Sheet", orderId);
+
+    // --- 4. SMART LOGGING (Diff Logic) ---
+    const newProfit = payload.profitMargin.toFixed(2);
+    let logMessage = "";
+
+    if (existing) {
+        // It was an update
+        const oldProfit = existing.profitMargin.toFixed(2);
+        // Only mention "Changed" if the value actually changed
+        if (oldProfit !== newProfit) {
+            logMessage = `Updated Costing. Profit changed: $${oldProfit} ➔ $${newProfit}/dzn`;
+        } else {
+            logMessage = `Updated Costing details. Profit remains $${newProfit}/dzn`;
+        }
+    } else {
+        // It was a new creation
+        logMessage = `Created Costing Sheet. Est. Profit: $${newProfit}/dzn`;
+    }
+
+    await logActivity("UPDATED_COSTING", logMessage, orderId);
+    // -------------------------------------
 
     revalidatePath(`/orders/${orderId}`);
     return { success: "Costing Saved Successfully" };
