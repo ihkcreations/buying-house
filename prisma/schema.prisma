@@ -265,25 +265,36 @@ model SalesContract {
   orderId   String   @unique @db.ObjectId
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
-  scNumber  String
+  scNumber  String   // "Purchase Order No.INO/PIO/..."
   scDate    DateTime
-
-  consignee     String?
-  notifyParty   String?
   
-  // --- INDEPENDENT TERMS (Snapshotted from PI, editable) ---
-  payment         String?
-  blClause        String?
+  // --- PARTIES ---
+  vendorAddress   String? // "Address of Vendor"
+  consignee       String? // "Address/Consignee"
+  
+  // --- BANKING ---
+  vendorBank      String? // "Vendor's bank"
+  buyerBank       String? // "LC/TT Opening Bank" (NEW)
+  negotiatingBank String? // "Negotiating Bank" (NEW)
+  
+  // --- TERMS (Mapped to your PDF) ---
+  deliveryTerm    String? // "Terms of Delivery" (FCA/FOB)
+  shipmentMode    String? // "Mode of Shipment"
+  paymentTerm     String? // "Payment Term"
   tolerance       String?
-  freightTerm     String?
-  portLoading     String?
   partialShipment String?
-  charges         String?
-  insurance       String?
-  lcTerm1         String?
-  lcTerm2         String?
+  transShipment   String? // "Trans Shipment"
   portDischarge   String?
-  documents       String?
+  finalDest       String? // "Port of Delivery / Final Dest"
+  portLoading     String?
+  latestShipDate  String? // "Latest Date of Shipment"
+  expiryDate      String? // "Date and Place of Expiry"
+  insurance       String?
+  specialCondition String?
+  
+  // --- LONG TEXT BLOCKS ---
+  docRequired     String? // "Documents Required"
+  lateClause      String? // "Late Delivery Clause" (The big text block)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

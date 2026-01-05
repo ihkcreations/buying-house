@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Save, Printer, Building2, MapPin, Handshake } from "lucide-react";
+import { Save, Printer, Building2, MapPin, Handshake, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { saveSC } from "@/app/actions/commercial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "../ui/textarea";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { SCDocument } from "@/components/pdf/sc-template"; // Ensure you updated this template in previous step
 
 export function SCGenerator({ 
     order, 
@@ -24,21 +26,43 @@ export function SCGenerator({
     settings?: any
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // --- 1. DYNAMIC DEFAULTS ---
   const defaultSupplierInfo = settings 
     ? `${settings.companyName}\n${settings.companyAddress}\n${settings.contactPhone || ""}`
-    : "P.I. OCEAN TEX\nDhaka, Bangladesh";
+    : "P.I. OCEAN TRADE CO.\n26/1, 26/2, DR.KUDRAT-E-KHUDA ROAD\nDHAKA, BANGLADESH.";
 
-  // Terms: Use SC if exists, otherwise fallback to PI, otherwise defaults
-  // This allows the SC to start as a copy of PI, but evolve independently
-  const t = sc || pi || {}; 
+  const defaultBuyerInfo = `${order.buyer.name}\n${order.buyer.country}`;
 
-  // Items comes from PI (Read Only for SC usually)
-  // If PI items exist, map them. Otherwise default.
+  // Default Late Clause Text (From your PDF)
+  const defaultLateClause = `For the purposes of this document, “late” is determined from the P.O. Requested Ship Date/ETD Origin Date listed on the Purchase Order.
+It is the vendor’s responsibility to ensure that the goods are available to ship by this date listed on the Purchase Order. Vessel rotation changes
+beyond the below prescribed timelines will not be considered. All charges quoted below are in U.S. dollars.
+
+DIRECT OCEAN SHIPMENTS
+1. If a shipment is up to 6 days late no penalty will be taken
+2. If a shipment is 7-14 days late Bluestem will allow the vendor to ship via regular vessel with 1-week late penalty.
+3. If a shipment is between 15-21 days late, The shipment will be aired 100% prepaid. Late penalty will be waived.
+4. If a shipment is more than 21 days late, The shipment will be aired 100% prepaid. Applicable late penalties will be assessed based
+on the total number of weeks from the shipment date listed on the PO to the date the shipment actually occurred.
+
+DIRECT AIR SHIPMENTS
+It is the vendor’s responsibility to ensure that the goods are available to ship by the date listed on the Purchase Order.
+For air shipments only “available to ship” is defined as the cargo and documents receipt date. Vendor should ensure that the forwarder states" cargo
+and documents received DATE” on the AWB. This applies to Purchase Orders placed as air as well as partial quantities requested to be air collect.
+1. If a shipment is 4 to 8 days late,The vendor will air the shipment 50% prepaid 50% collect with 1-week late penalty.
+2. If a shipment will be 9 or more days late, The vendor will air the shipment 100% prepaid. Plus, the number of weeks’ late penalty will be taken.
+
+`;
+
+  // Items come from PI (Read Only for SC usually)
   const items = pi?.items && Array.isArray(pi.items) ? pi.items : [{
       styleOrder: `${order.styleNo}`,
-      article: "",
       description: `Men's 100% Cotton Knitted ${order.styleNo}`,
       shippingDate: format(new Date(), "yyyy-MM-dd"),
       qty: order.orderQty,
@@ -69,10 +93,10 @@ export function SCGenerator({
   return (
     <form action={handleSubmit} className="space-y-8 pb-32">
       
-      {/* 1. HEADER */}
+      {/* 1. HEADER & PARTIES */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between text-white rounded-t-lg">
-            <CardTitle className="flex items-center gap-2 text-black">
+        <CardHeader className="flex flex-row items-center justify-between text-black rounded-t-lg">
+            <CardTitle className="flex items-center gap-2">
                 <Handshake className="w-5 h-5 text-blue-400" /> 
                 Sales Contract
             </CardTitle>
@@ -80,8 +104,8 @@ export function SCGenerator({
                 <div className="flex flex-col">
                     <Input 
                         name="scNumber" 
-                        defaultValue={sc?.scNumber || `SC-${order.orderNo}`} 
-                        className="w-40 font-mono font-bold bg-white" 
+                        defaultValue={sc?.scNumber || `INO/PIO/${order.orderNo}`} 
+                        className="w-48 font-mono font-bold bg-white" 
                         placeholder="SC Number"
                     />
                 </div>
@@ -95,77 +119,79 @@ export function SCGenerator({
                 </div>
             </div>
         </CardHeader>
-        <CardContent className="pt-6 space-y-6">
-            {/* TOP ROW: SELLER & BUYER */}
-            <div className="grid grid-cols-2 gap-6">
-                <div className="p-4 border rounded bg-slate-50 h-full">
-                    <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                        <MapPin className="w-3 h-3" /> Exporter / Seller
-                    </Label>
-                    <div className="text-sm text-slate-700 whitespace-pre-wrap font-medium leading-relaxed">
-                        {defaultSupplierInfo}
-                    </div>
-                </div>
-                <div className="p-4 border rounded bg-slate-50 h-full">
-                    <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                        <Building2 className="w-3 h-3" /> Importer / Buyer (Bill To)
-                    </Label>
-                    <div className="font-bold text-slate-900">{order.buyer.name}</div>
-                    <div className="text-sm text-slate-600 mt-1">{order.buyer.country}</div>
-                </div>
+        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Vendor Address */}
+            <div className="space-y-2">
+                <Label className="text-xs uppercase text-slate-500 font-bold">Address of Vendor</Label>
+                <Textarea 
+                    name="vendorAddress" 
+                    defaultValue={sc?.vendorAddress || defaultSupplierInfo} 
+                    className="h-24 bg-slate-50"
+
+                />
             </div>
 
-            {/* NEW ROW: CONSIGNEE & NOTIFY PARTY */}
-            <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label>Consignee (Ship To)</Label>
-                    <Textarea 
-                        name="consignee" 
-                        defaultValue={sc?.consignee || "Same as Buyer"} 
-                        placeholder="Warehouse Address..." 
-                        className="h-20 text-xs resize-none"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Notify Party</Label>
-                    <Textarea 
-                        name="notifyParty" 
-                        defaultValue={sc?.notifyParty || "Same as Consignee"} 
-                        placeholder="Forwarder / Agent Details..." 
-                        className="h-20 text-xs resize-none"
-                    />
-                </div>
+            {/* Consignee Address */}
+            <div className="space-y-2">
+                <Label className="text-xs uppercase text-slate-500 font-bold">Address / Consignee</Label>
+                <Textarea 
+                    name="consignee" 
+                    defaultValue={sc?.consignee || defaultBuyerInfo} 
+                    className="h-24 bg-slate-50"
+                />
             </div>
+
+            {/* Vendor Bank */}
+            <div className="space-y-2">
+                <Label className="text-xs uppercase text-slate-500 font-bold">Vendor&apos;s Bank</Label>
+                <Textarea 
+                    name="vendorBank" 
+                    defaultValue={sc?.vendorBank || settings?.bankDetails} 
+                    className="h-24 bg-yellow-50 border-yellow-200"
+                />
+            </div>
+
+            {/* Buyer Bank */}
+            <div className="space-y-2">
+                <Label className="text-xs uppercase text-slate-500 font-bold">LC/TT Opening Bank</Label>
+                <Textarea 
+                    name="buyerBank" 
+                    defaultValue={sc?.buyerBank || ""} 
+                    placeholder="BANK OF TOKYO-MITSUBISHI UFJ..." 
+                    className="h-24 bg-yellow-50 border-yellow-200"
+                />
+            </div>
+
         </CardContent>
       </Card>
 
       {/* 2. ORDER DETAILS (READ ONLY FROM PI) */}
       <Card>
-          <CardHeader><CardTitle>Contract Details</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Order Details</CardTitle></CardHeader>
           <CardContent className="p-0 overflow-x-auto">
               <Table className="min-w-[800px]">
                   <TableHeader>
                       <TableRow className="bg-slate-100">
-                          <TableHead>Style / Article</TableHead>
-                          <TableHead className="w-[300px]">Description</TableHead>
-                          <TableHead>Ship Date</TableHead>
-                          <TableHead className="text-right">Qty</TableHead>
-                          <TableHead className="text-right">Rate</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead>Order No</TableHead>
+                          <TableHead className="w-[300px]">Item Description</TableHead>
+                          <TableHead>Color/Size</TableHead>
+                          <TableHead className="text-right">Qty/Pcs</TableHead>
+                          <TableHead className="text-right">Unit Px</TableHead>
+                          <TableHead className="text-right">Amount (USD)</TableHead>
+                          <TableHead>Shipment Date</TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
                       {items.map((item: any, idx: number) => (
                           <TableRow key={idx}>
-                              <TableCell className="font-medium">
-                                  {item.styleOrder} <br/> 
-                                  <span className="text-xs text-slate-500">{item.article}</span>
-                              </TableCell>
+                              <TableCell className="font-medium">{item.styleOrder.split('/')[1] || item.styleOrder}</TableCell>
                               <TableCell className="text-sm">{item.description}</TableCell>
-                              <TableCell className="text-xs">{item.shippingDate}</TableCell>
-                              <TableCell className="text-right">{item.qty}</TableCell>
+                              <TableCell className="text-xs">{item.article || "Free"}</TableCell>
+                              <TableCell className="text-right">{item.qty.toLocaleString()}</TableCell>
                               <TableCell className="text-right">${item.rate}</TableCell>
-                              <TableCell className="text-right font-bold">${item.amount}</TableCell>
+                              <TableCell className="text-right font-bold">${item.amount.toLocaleString()}</TableCell>
+                              <TableCell className="text-xs">{item.shippingDate}</TableCell>
                           </TableRow>
                       ))}
                   </TableBody>
@@ -173,60 +199,69 @@ export function SCGenerator({
           </CardContent>
       </Card>
 
-      {/* 3. CONTRACT TERMS (Editable & Independent) */}
+      {/* 3. TERMS & CONDITIONS (Matching PDF Fields) */}
       <Card>
-          <CardHeader><CardTitle>Contract Terms & Conditions</CardTitle></CardHeader>
-          <CardContent className="p-0">
-             <Table>
-                <TableHeader>
-                    <TableRow className="bg-slate-100">
-                        <TableHead className="w-[60px]">No.</TableHead>
-                        <TableHead className="w-[200px]">Type</TableHead>
-                        <TableHead>Description</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    <TableRow><TableCell>01</TableCell><TableCell className="font-medium">Payment</TableCell><TableCell><Input name="term_payment" defaultValue={t.payment || "Irrevocable L/C at sight"} /></TableCell></TableRow>
-                    <TableRow><TableCell>02</TableCell><TableCell className="font-medium">B/L Clause</TableCell><TableCell><Input name="term_bl" defaultValue={t.blClause || "Negotiable against documents"} /></TableCell></TableRow>
-                    <TableRow><TableCell>03</TableCell><TableCell className="font-medium">Tolerance</TableCell><TableCell><Input name="term_tolerance" defaultValue={t.tolerance || "+/- 5% in Quantity and Amount"} /></TableCell></TableRow>
-                    <TableRow><TableCell>04</TableCell><TableCell className="font-medium">Freight Term</TableCell><TableCell><Input name="term_freight" defaultValue={t.freightTerm || "Freight Collect"} /></TableCell></TableRow>
-                    <TableRow><TableCell>05</TableCell><TableCell className="font-medium">Port of Loading</TableCell><TableCell><Input name="term_pol" defaultValue={t.portLoading || settings?.defaultPort || "Chittagong, Bangladesh"} /></TableCell></TableRow>
-                    <TableRow><TableCell>06</TableCell><TableCell className="font-medium">Partial Shipment</TableCell><TableCell><Input name="term_partial" defaultValue={t.partialShipment || "Allowed"} /></TableCell></TableRow>
-                    <TableRow><TableCell>07</TableCell><TableCell className="font-medium">Charges</TableCell><TableCell><Input name="term_charges" defaultValue={t.charges || "Outside Bangladesh on Applicant's account"} /></TableCell></TableRow>
-                    <TableRow><TableCell>08</TableCell><TableCell className="font-medium">Insurance</TableCell><TableCell><Input name="term_insurance" defaultValue={t.insurance || "Covered by Applicant"} /></TableCell></TableRow>
-                    <TableRow><TableCell>09</TableCell><TableCell className="font-medium">L/C Term 1</TableCell><TableCell><Input name="term_lc1" defaultValue={t.lcTerm1 || ""} placeholder="Special Condition 1" /></TableCell></TableRow>
-                    <TableRow><TableCell>10</TableCell><TableCell className="font-medium">L/C Term 2</TableCell><TableCell><Input name="term_lc2" defaultValue={t.lcTerm2 || ""} placeholder="Special Condition 2" /></TableCell></TableRow>
-                    <TableRow><TableCell>11</TableCell><TableCell className="font-medium">Port of Discharge</TableCell><TableCell><Input name="term_pod" defaultValue={t.portDischarge || ""} placeholder="Destination Port" /></TableCell></TableRow>
-                    <TableRow><TableCell>12</TableCell><TableCell className="font-medium">Documents</TableCell><TableCell><Input name="term_docs" defaultValue={t.documents || "Comm. Invoice, Packing List, B/L, CO, GSP"} /></TableCell></TableRow>
-                </TableBody>
-             </Table>
+          <CardHeader><CardTitle>Terms & Conditions</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1"><Label>Terms of Delivery</Label><Input name="deliveryTerm" defaultValue={sc?.deliveryTerm || '"FCA" BANGLADESH'} /></div>
+              <div className="space-y-1"><Label>Mode of Shipment</Label><Input name="shipmentMode" defaultValue={sc?.shipmentMode || "BY SEA / AIR"} /></div>
+              <div className="space-y-1"><Label>Payment Term</Label><Input name="paymentTerm" defaultValue={sc?.paymentTerm || "50% TT IN ADVANCE, 50% AFTER SHIPMENT"} /></div>
+              <div className="space-y-1"><Label>Tolerance</Label><Input name="tolerance" defaultValue={sc?.tolerance || "+-3%"} /></div>
+              <div className="space-y-1"><Label>Partial Shipment</Label><Input name="partialShipment" defaultValue={sc?.partialShipment || "ALLOWED"} /></div>
+              <div className="space-y-1"><Label>Trans Shipment</Label><Input name="transShipment" defaultValue={sc?.transShipment || "ALLOWED"} /></div>
+              
+              <div className="space-y-1"><Label>Port of Discharge</Label><Input name="portDischarge" defaultValue={sc?.portDischarge || "HAKATA SEA PORT / FUKUOKA"} /></div>
+              <div className="space-y-1"><Label>Port of Delivery (Final)</Label><Input name="finalDest" defaultValue={sc?.finalDest || "HAKATA SEA PORT"} /></div>
+              <div className="space-y-1"><Label>Port of Loading</Label><Input name="portLoading" defaultValue={sc?.portLoading || "CHITTAGONG, BANGLADESH"} /></div>
+              <div className="space-y-1"><Label>Latest Date of Shipment</Label><Input name="latestShipDate" defaultValue={sc?.latestShipDate || "AS PER CHART"} /></div>
+              
+              <div className="space-y-1"><Label>Date/Place of Expiry</Label><Input name="expiryDate" defaultValue={sc?.expiryDate || "15TH AUGUST-2025"} /></div>
+              <div className="space-y-1"><Label>Negotiating Bank</Label><Input name="negotiatingBank" defaultValue={sc?.negotiatingBank || "ANY BANK IN BANGLADESH"} /></div>
+              <div className="space-y-1"><Label>Insurance</Label><Input name="insurance" defaultValue={sc?.insurance || "TO BE COVERED BY ULTIMATE BUYER"} /></div>
+              
+              <div className="col-span-2 space-y-1">
+                  <Label>Special Condition</Label>
+                  <Input name="specialCondition" defaultValue={sc?.specialCondition || "INSPECTION CERTIFICATE WILL BE ISSUED BY P.I OCEAN TRADE CO."} />
+              </div>
+
+              <div className="col-span-2 space-y-1 mt-4">
+                  <Label className="font-bold">Documents Required</Label>
+                  <Textarea name="docRequired" defaultValue={sc?.docRequired || "COMMERCIAL INVOICE, PACKING LIST, DETAILED PACKING LIST, BILL OF LADING / HAWB , GSP, P.I. OCEAN TRADE CO., ISSUES IC, DOCUMENTS PRESENTATION: WITHIN 8 DAYS AFTER SHIPMENT DATE. LATE PRESENTATION OF DOCUMENTS IN THE AMOUNT OF USD250.00."} className="h-16" />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                  <Label className="font-bold">Late Delivery Clause</Label>
+                  <Textarea name="lateClause" defaultValue={sc?.lateClause || defaultLateClause} className="h-40 font-mono text-xs" />
+              </div>
           </CardContent>
       </Card>
 
-      {/* 4. DUAL SIGNATURE BLOCK (Buyer & Seller) */}
-      <div className="grid grid-cols-2 gap-12 mt-12 px-6">
-            <div className="mt-8">
-                <div className="border-t border-slate-300 w-2/3 pt-2">
-                    <p className="font-bold text-sm">AGREED & ACCEPTED (BUYER)</p>
-                    <p className="text-xs text-slate-500">Name / Seal / Date</p>
-                </div>
-            </div>
-            <div className="mt-8 text-right flex flex-col items-end">
-                <div className="border-t border-slate-900 w-2/3 pt-2">
-                    <p className="font-bold text-sm">P.I. OCEAN TEX (SELLER)</p>
-                    <p className="text-xs text-slate-500">Authorized Signature</p>
-                </div>
-            </div>
-      </div>
-
+      {/* 4. FOOTER & PDF DOWNLOAD */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 p-4 bg-white border-t flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
           <div className="text-sm text-slate-500 pl-4">
               Contract Value: <span className="font-bold text-slate-900 text-lg">${totalAmount.toLocaleString()}</span>
           </div>
           <div className="flex gap-3 pr-4">
-              <Button type="button" variant="outline">
-                  <Printer className="w-4 h-4 mr-2" /> Print PDF
-              </Button>
+              
+              {/* PDF DOWNLOAD BUTTON */}
+              {isClient && sc ? (
+                <PDFDownloadLink
+                    document={<SCDocument order={order} pi={pi} sc={sc} settings={settings} />}
+                    fileName={`SC-${sc.scNumber}.pdf`}
+                >
+                    {({ loading }) => (
+                        <Button type="button" variant="outline" disabled={loading}>
+                            <Printer className="w-4 h-4 mr-2" /> 
+                            {loading ? "Generating..." : "Download PDF"}
+                        </Button>
+                    )}
+                </PDFDownloadLink>
+              ) : (
+                <Button type="button" variant="outline" disabled title="Save first to enable printing">
+                    <Printer className="w-4 h-4 mr-2" /> Save to Print
+                </Button>
+              )}
+
               <Button type="submit" disabled={isLoading} className="bg-slate-900 hover:bg-slate-800 min-w-[150px]">
                   <Save className="w-4 h-4 mr-2" /> 
                   {isLoading ? "Saving..." : "Save Contract"}

@@ -73,43 +73,42 @@ export async function savePI(orderId: string, formData: FormData) {
 
 export async function saveSC(orderId: string, formData: FormData) {
   try {
-    const scNumber = formData.get("scNumber") as string;
-    const dateStr = formData.get("scDate") as string;
-
     const payload = {
-        scNumber,
-        scDate: new Date(dateStr),
-        // Map the 12 Terms
-
-        consignee: formData.get("consignee") as string,
-        notifyParty: formData.get("notifyParty") as string,
-
-        payment: formData.get("term_payment") as string,
-        blClause: formData.get("term_bl") as string,
-        tolerance: formData.get("term_tolerance") as string,
-        freightTerm: formData.get("term_freight") as string,
-        portLoading: formData.get("term_pol") as string,
-        partialShipment: formData.get("term_partial") as string,
-        charges: formData.get("term_charges") as string,
-        insurance: formData.get("term_insurance") as string,
-        lcTerm1: formData.get("term_lc1") as string,
-        lcTerm2: formData.get("term_lc2") as string,
-        portDischarge: formData.get("term_pod") as string,
-        documents: formData.get("term_docs") as string,
+        scNumber: formData.get("scNumber") as string,
+        scDate: new Date(formData.get("scDate") as string),
         
+        vendorAddress: formData.get("vendorAddress") as string,
+        consignee: formData.get("consignee") as string,
+        vendorBank: formData.get("vendorBank") as string,
+        buyerBank: formData.get("buyerBank") as string,
+        negotiatingBank: formData.get("negotiatingBank") as string,
+
+        deliveryTerm: formData.get("deliveryTerm") as string,
+        shipmentMode: formData.get("shipmentMode") as string,
+        paymentTerm: formData.get("paymentTerm") as string,
+        tolerance: formData.get("tolerance") as string,
+        partialShipment: formData.get("partialShipment") as string,
+        transShipment: formData.get("transShipment") as string,
+        portDischarge: formData.get("portDischarge") as string,
+        finalDest: formData.get("finalDest") as string,
+        portLoading: formData.get("portLoading") as string,
+        latestShipDate: formData.get("latestShipDate") as string,
+        expiryDate: formData.get("expiryDate") as string,
+        insurance: formData.get("insurance") as string,
+        specialCondition: formData.get("specialCondition") as string,
+        
+        docRequired: formData.get("docRequired") as string,
+        lateClause: formData.get("lateClause") as string,
     };
 
     await db.salesContract.upsert({
       where: { orderId },
       update: payload,
-      create: {
-        orderId,
-        ...payload,
-      },
+      create: { orderId, ...payload },
     });
 
     revalidatePath(`/commercial/orders/${orderId}`);
-    return { success: "Sales Contract Saved!" };
+    return { success: "SC Saved Successfully!" };
   } catch (error) {
     return { error: "Failed to save Contract." };
   }
