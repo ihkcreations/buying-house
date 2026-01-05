@@ -80,6 +80,10 @@ export async function saveSC(orderId: string, formData: FormData) {
         scNumber,
         scDate: new Date(dateStr),
         // Map the 12 Terms
+
+        consignee: formData.get("consignee") as string,
+        notifyParty: formData.get("notifyParty") as string,
+
         payment: formData.get("term_payment") as string,
         blClause: formData.get("term_bl") as string,
         tolerance: formData.get("term_tolerance") as string,
@@ -92,6 +96,7 @@ export async function saveSC(orderId: string, formData: FormData) {
         lcTerm2: formData.get("term_lc2") as string,
         portDischarge: formData.get("term_pod") as string,
         documents: formData.get("term_docs") as string,
+        
     };
 
     await db.salesContract.upsert({

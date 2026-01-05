@@ -267,6 +267,9 @@ model SalesContract {
   
   scNumber  String
   scDate    DateTime
+
+  consignee     String?
+  notifyParty   String?
   
   // --- INDEPENDENT TERMS (Snapshotted from PI, editable) ---
   payment         String?

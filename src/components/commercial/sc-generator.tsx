@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "../ui/textarea";
 
 export function SCGenerator({ 
     order, 
@@ -94,21 +95,46 @@ export function SCGenerator({
                 </div>
             </div>
         </CardHeader>
-        <CardContent className="pt-6 grid grid-cols-2 gap-6">
-            <div className="p-4 border rounded bg-slate-50 h-full">
-                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                    <MapPin className="w-3 h-3" /> Exporter / Seller
-                </Label>
-                <div className="text-sm text-slate-700 whitespace-pre-wrap font-medium leading-relaxed">
-                    {defaultSupplierInfo}
+        <CardContent className="pt-6 space-y-6">
+            {/* TOP ROW: SELLER & BUYER */}
+            <div className="grid grid-cols-2 gap-6">
+                <div className="p-4 border rounded bg-slate-50 h-full">
+                    <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
+                        <MapPin className="w-3 h-3" /> Exporter / Seller
+                    </Label>
+                    <div className="text-sm text-slate-700 whitespace-pre-wrap font-medium leading-relaxed">
+                        {defaultSupplierInfo}
+                    </div>
+                </div>
+                <div className="p-4 border rounded bg-slate-50 h-full">
+                    <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
+                        <Building2 className="w-3 h-3" /> Importer / Buyer (Bill To)
+                    </Label>
+                    <div className="font-bold text-slate-900">{order.buyer.name}</div>
+                    <div className="text-sm text-slate-600 mt-1">{order.buyer.country}</div>
                 </div>
             </div>
-            <div className="p-4 border rounded bg-slate-50 h-full">
-                <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                    <Building2 className="w-3 h-3" /> Importer / Buyer
-                </Label>
-                <div className="font-bold text-slate-900">{order.buyer.name}</div>
-                <div className="text-sm text-slate-600 mt-1">{order.buyer.country}</div>
+
+            {/* NEW ROW: CONSIGNEE & NOTIFY PARTY */}
+            <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label>Consignee (Ship To)</Label>
+                    <Textarea 
+                        name="consignee" 
+                        defaultValue={sc?.consignee || "Same as Buyer"} 
+                        placeholder="Warehouse Address..." 
+                        className="h-20 text-xs resize-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>Notify Party</Label>
+                    <Textarea 
+                        name="notifyParty" 
+                        defaultValue={sc?.notifyParty || "Same as Consignee"} 
+                        placeholder="Forwarder / Agent Details..." 
+                        className="h-20 text-xs resize-none"
+                    />
+                </div>
             </div>
         </CardContent>
       </Card>
