@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 export async function saveTNA(orderId: string, formData: FormData) {
   try {
@@ -35,6 +36,8 @@ export async function saveTNA(orderId: string, formData: FormData) {
         ...payload,
       },
     });
+
+    await logActivity("UPDATED_TNA", "Updated Time & Action Plan", orderId);
 
     revalidatePath(`/orders/${orderId}`);
     return { success: "T&A Plan updated successfully!" };

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth"; // Import auth
 import { headers } from "next/headers";
+import { logActivity } from "@/lib/logger";
 
 export async function createOrder(data: any) {
   // 1. Extract data
@@ -30,7 +31,7 @@ export async function createOrder(data: any) {
 
   try {
     // 3. Save to DB
-    await db.order.create({
+    const newOrder = await db.order.create({
       data: {
         orderNo,
         styleNo,
@@ -39,10 +40,15 @@ export async function createOrder(data: any) {
         orderQty: parseInt(orderQty),
         unitPrice: parseFloat(unitPrice),
         totalValue: parseFloat(totalValue),
-        sizeColorMap, // Saves directly as JSON
+        sizeColorMap,
         status: "PENDING",
       },
     });
+
+    // 4. Log Activity (Now newOrder is defined)
+    await logActivity("CREATED_ORDER", `Created Order ${orderNo}`, newOrder.id);
+
+
 
     // 4. Success
     revalidatePath("/orders/all");
@@ -73,6 +79,8 @@ export async function deleteOrder(orderId: string) {
     await db.order.delete({
       where: { id: orderId },
     });
+    
+    await logActivity("DELETED_ORDER", `Deleted Order ID ${orderId}`);
 
     revalidatePath("/orders/ongoing");
     revalidatePath("/orders/all"); // Assuming you have this route

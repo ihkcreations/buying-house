@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 // 1. Update Basic Info (Name)
 export async function updateProfileName(userId: string, formData: FormData) {
@@ -16,6 +17,8 @@ export async function updateProfileName(userId: string, formData: FormData) {
       where: { id: userId },
       data: { name },
     });
+
+    await logActivity("UPDATED_PROFILE", "Updated Profile Name", userId);
 
     revalidatePath("/settings");
     return { success: "Profile updated successfully." };

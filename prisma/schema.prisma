@@ -81,6 +81,7 @@ model Order {
   commercialDocs  CommercialDoc[]
 
   actualCosting   ActualCosting?
+  activityLogs    ActivityLog[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -406,4 +407,24 @@ model ActualCosting {
   logisticsActual   Float   @default(0) // The dangerous one (Air freight)
   
   updatedAt DateTime @updatedAt
+}
+
+// --- 13. ACTIVITY LOG ---
+model ActivityLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Who did it?
+  userId    String
+  userName  String
+  userRole  String
+  
+  // What happened?
+  action    String   // e.g. "UPDATED_COSTING", "CREATED_PI"
+  details   String   // e.g. "Approved Costing for Order #1099"
+  
+  // Related to which Order? (Optional, but recommended)
+  orderId   String?  @db.ObjectId
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
 }

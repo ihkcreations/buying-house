@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 export async function createFabricBooking(orderId: string, formData: FormData) {
   try {
@@ -30,6 +31,8 @@ export async function createFabricBooking(orderId: string, formData: FormData) {
     });
 
     await db.order.update({ where: { id: orderId }, data: { status: "FABRIC_BOOKED" } });
+
+    await logActivity("BOOKED_FABRIC", `Booked ${formData.get("type")} Fabric`, orderId);
     revalidatePath(`/orders/${orderId}`);
     return { success: "Fabric Booking added!" };
   } catch (error) {
@@ -41,6 +44,8 @@ export async function createFabricBooking(orderId: string, formData: FormData) {
 export async function deleteFabricBooking(id: string, orderId: string) {
     try {
         await db.fabricBooking.delete({ where: { id } });
+
+        await logActivity("DELETED_FABRIC_BOOKING", `Deleted Fabric Booking`, orderId);
         revalidatePath(`/orders/${orderId}`);
         return { success: "Deleted successfully" };
     } catch (error) {

@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 export async function saveProductionLog(orderId: string, formData: FormData) {
   try {
@@ -33,6 +34,8 @@ export async function saveProductionLog(orderId: string, formData: FormData) {
         });
     }
 
+    await logActivity("LOGGED_PRODUCTION", `Added Production Entry`, orderId);
+
     revalidatePath(`/orders/${orderId}`);
     return { success: "Production log added!" };
   } catch (error) {
@@ -44,6 +47,8 @@ export async function saveProductionLog(orderId: string, formData: FormData) {
 export async function deleteProductionLog(id: string, orderId: string) {
     try {
         await db.productionLog.delete({ where: { id } });
+        
+        await logActivity("DELETED_PRODUCTION_LOG", `Deleted Production Log Entry`, orderId);
         revalidatePath(`/orders/${orderId}`);
         return { success: "Log deleted." };
     } catch (error) {

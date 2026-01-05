@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 export async function savePI(orderId: string, formData: FormData) {
   try {
@@ -63,6 +64,8 @@ export async function savePI(orderId: string, formData: FormData) {
       },
     });
 
+    await logActivity("GENERATED_PI", `Updated Proforma Invoice`, orderId);
+
     revalidatePath(`/commercial/orders/${orderId}`);
     return { success: "PI Saved Successfully!" };
   } catch (error) {
@@ -106,6 +109,8 @@ export async function saveSC(orderId: string, formData: FormData) {
       update: payload,
       create: { orderId, ...payload },
     });
+
+    await logActivity("GENERATED_SC", `Updated Sales Contract`, orderId);
 
     revalidatePath(`/commercial/orders/${orderId}`);
     return { success: "SC Saved Successfully!" };
@@ -165,6 +170,8 @@ export async function createCommercialDoc(orderId: string, formData: FormData) {
         }
     });
 
+    await logActivity("UPLOADED_DOC", `Uploaded ${formData.get("type")}`, orderId);
+
     revalidatePath(`/commercial/orders/${orderId}`);
     return { success: "Document added successfully" };
   } catch (error) {
@@ -174,6 +181,20 @@ export async function createCommercialDoc(orderId: string, formData: FormData) {
 
 // Keep the delete function too
 export async function deleteCommercialDoc(id: string, orderId: string) {
-    await db.commercialDoc.delete({ where: { id } });
-    revalidatePath(`/commercial/orders/${orderId}`);
+    try {
+        // Optional: Fetch doc details first to log the name before deleting
+        const doc = await db.commercialDoc.findUnique({ where: { id } });
+        const docName = doc?.name || "Document";
+
+        await db.commercialDoc.delete({ where: { id } });
+        
+        // --- ADD LOG ---
+        await logActivity("DELETED_DOC", `Deleted ${docName}`, orderId);
+        // ----------------
+
+        revalidatePath(`/commercial/orders/${orderId}`);
+        return { success: "Document deleted" };
+    } catch (error) {
+        return { error: "Failed to delete" };
+    }
 }

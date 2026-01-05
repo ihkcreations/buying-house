@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 export async function saveOCS(orderId: string, formData: FormData) {
   try {
@@ -36,6 +37,7 @@ export async function saveOCS(orderId: string, formData: FormData) {
 
     // Mark order as CLOSED if financials are done? (Optional)
     // await db.order.update({ where: { id: orderId }, data: { status: "CLOSED" } });
+    await logActivity("UPDATED_OCS", "Updated OCS Actuals", orderId);
 
     revalidatePath(`/orders/${orderId}`);
     return { success: "Actuals saved successfully!" };

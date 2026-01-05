@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
 export async function saveCosting(orderId: string, data: any) {
   try {
@@ -51,6 +52,8 @@ export async function saveCosting(orderId: string, data: any) {
         where: { id: orderId },
         data: { status: "COSTING_APPROVED" } 
     });
+    
+    await logActivity("UPDATED_COSTING", "Updated Costing Sheet", orderId);
 
     revalidatePath(`/orders/${orderId}`);
     return { success: "Costing Saved Successfully" };
