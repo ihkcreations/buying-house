@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { protectPage } from "@/lib/protect";
 import { startOfYear, startOfMonth, subMonths } from "date-fns";
+import { getExchangeRate } from "@/lib/currency";
 
 export default async function DashboardPage({
   searchParams,
@@ -63,7 +64,7 @@ export default async function DashboardPage({
     // B. Expenses (Only if allowed & Filtered by Date)
     showFinancials ? db.expense.findMany({
         where: { status: "APPROVED", date: dateFilter },
-        select: { amount: true, currency: true, date: true }
+        select: { amount: true, currency: true, date: true, exchangeRate: true }
     }) : [],
 
     db.buyer.count(),
@@ -129,17 +130,28 @@ export default async function DashboardPage({
     }
   });
 
-  // Subtract Office Expenses from Profit
-  const EXCHANGE_RATE = 120;
+  // Calculate Total Expenses (With History Rate)
   const totalOperationalExpenses = expenses.reduce((sum: number, e: any) => {
-      const usdAmount = e.currency === "BDT" ? e.amount / EXCHANGE_RATE : e.amount;
+      let usdAmount = 0;
+      if (e.currency === "USD") {
+          usdAmount = e.amount;
+      } else {
+          const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
+          usdAmount = e.amount / rate;
+      }
       return sum + usdAmount;
   }, 0);
 
   // Apply Expenses to Chart
   expenses.forEach((e: any) => {
       const m = new Date(e.date).getMonth();
-      const val = e.currency === "BDT" ? e.amount / EXCHANGE_RATE : e.amount;
+      let val = 0;
+      if (e.currency === "USD") {
+          val = e.amount;
+      } else {
+          const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
+          val = e.amount / rate;
+      }
       if (monthlyData[m]) {
           monthlyData[m].profit -= val; 
       }

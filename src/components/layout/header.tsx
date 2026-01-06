@@ -29,16 +29,8 @@ export function Header() {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-6">
-      {/* Left: Global Search */}
-      <div className="flex items-center gap-2 rounded-md border bg-slate-50 px-3 py-2 w-96">
-        <Search className="h-4 w-4 text-slate-500" />
-        <input 
-          type="text" 
-          placeholder="Search by Order #..." 
-          className="bg-transparent text-sm outline-none w-full placeholder:text-slate-400"
-        />
-      </div>
+    <header className="flex h-16 items-center justify-end border-b bg-white px-6">
+      
 
       {/* Right: Actions & Profile */}
       <div className="flex items-center gap-4">

@@ -71,7 +71,7 @@ const sidebarNav = [
     items: [
       { title: "Expense Entry", href: "/finance/expense", icon: PlusCircle },
       { title: "Approve Expense", href: "/finance/approve", icon: FileText, roles: ["admin"] },
-      { title: "Business Overview", href: "/finance/overview", icon: LayoutDashboard },
+      { title: "Business Overview", href: "/finance/overview", icon: LayoutDashboard, roles: ["admin"] },
     ],
   },
   {
@@ -104,7 +104,7 @@ export function AppSidebar() {
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-white text-slate-900">
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-slate-900">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-slate-900 cursor-pointer">
           <BriefcaseBusiness className="h-6 w-6 text-blue-600" />
           <span>PI Ocean</span>
         </Link>
@@ -153,9 +153,9 @@ export function AppSidebar() {
                     className="w-full"
                     defaultValue={shouldBeOpen ? item.title : undefined} // <--- THE FIX
                 >
-                    <AccordionItem value={item.title} className="border-none">
+                    <AccordionItem value={item.title} className="border-none cursor-pointer">
                     <AccordionTrigger className="py-2 px-4 hover:bg-slate-50 rounded-md hover:no-underline">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 ">
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                         </div>

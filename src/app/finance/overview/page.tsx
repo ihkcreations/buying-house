@@ -3,18 +3,24 @@ import { protectPage } from "@/lib/protect";
 import { FinanceDashboard } from "@/components/finance/finance-dashboard";
 
 export default async function BusinessOverviewPage() {
-  await protectPage(["admin", "merchandiser", "commercial", "finance"]);
+  await protectPage(["admin"]);
 
-  // 1. Fetch Completed Orders (Revenue)
+  // 1. Fetch Completed Orders (Revenue - Always in USD)
   const orders = await db.order.findMany({
     where: { status: { in: ["SHIPPED", "CLOSED", "OCS_FINALIZED"] } },
     select: { totalValue: true, createdAt: true }
   });
 
-  // 2. Fetch Approved Expenses
+  // 2. Fetch Approved Expenses (With Historical Rates)
   const expenses = await db.expense.findMany({
     where: { status: "APPROVED" },
-    select: { amount: true, date: true, category: true, currency: true }
+    select: { 
+        amount: true, 
+        date: true, 
+        category: true, 
+        currency: true, 
+        exchangeRate: true // <--- CRITICAL
+    }
   });
 
   // --- PROCESSING DATA ---
@@ -22,13 +28,17 @@ export default async function BusinessOverviewPage() {
   // A. Summary Totals
   const revenueTotal = orders.reduce((sum, o) => sum + o.totalValue, 0);
   
-  // Normalize Expense to USD (Simple assumption: 1 USD = 120 BDT)
-  // In a real app, use a currency API or setting
-  const EXCHANGE_RATE = 120; 
-  
+  // Calculate Total Expense in USD using Historical Rates
   const expenseTotal = expenses.reduce((sum, e) => {
-      const val = e.currency === "BDT" ? e.amount / EXCHANGE_RATE : e.amount;
-      return sum + val;
+      let usdAmount = 0;
+      if (e.currency === "USD") {
+          usdAmount = e.amount;
+      } else {
+          // Fallback to 120 if legacy data has no rate
+          const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
+          usdAmount = e.amount / rate;
+      }
+      return sum + usdAmount;
   }, 0);
 
   const summary = {
@@ -51,14 +61,26 @@ export default async function BusinessOverviewPage() {
 
   expenses.forEach(e => {
       const m = new Date(e.date).getMonth();
-      const val = e.currency === "BDT" ? e.amount / EXCHANGE_RATE : e.amount;
+      let val = 0;
+      if (e.currency === "USD") {
+          val = e.amount;
+      } else {
+          const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
+          val = e.amount / rate;
+      }
       monthlyData[m].expense += Math.round(val);
   });
 
   // C. Category Breakdown
   const catMap: Record<string, number> = {};
   expenses.forEach(e => {
-      const val = e.currency === "BDT" ? e.amount / EXCHANGE_RATE : e.amount;
+      let val = 0;
+      if (e.currency === "USD") {
+          val = e.amount;
+      } else {
+          const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
+          val = e.amount / rate;
+      }
       catMap[e.category] = (catMap[e.category] || 0) + val;
   });
   
@@ -71,7 +93,7 @@ export default async function BusinessOverviewPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Business Overview</h1>
-        <p className="text-slate-500">Financial health, liquidity, and expense analysis.</p>
+        <p className="text-slate-500">Financial health, liquidity, and expense analysis (USD Base).</p>
       </div>
 
       <FinanceDashboard 

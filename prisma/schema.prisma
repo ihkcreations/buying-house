@@ -390,6 +390,8 @@ model CompanySettings {
   accountName    String?
   defaultPaymentTerms String?
   defaultPort         String?
+
+  manualExchangeRate Float?
   
   updatedAt DateTime @updatedAt
 }
@@ -481,6 +483,7 @@ model Expense {
   
   category  String   // Travel, Food, Sample, Courier, Other
   amount    Float
+  exchangeRate  Float    @default(1)
   date      DateTime
   description String?
   

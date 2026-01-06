@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { logActivity } from "@/lib/logger";
+import { getExchangeRate } from "@/lib/currency";
 
 export async function createExpense(formData: FormData) {
   try {
@@ -12,6 +13,11 @@ export async function createExpense(formData: FormData) {
     if (!session) return { error: "Unauthorized" };
 
     const currency = formData.get("currency") as string || "BDT"; // Default BDT
+    const currentRate = await getExchangeRate();
+
+    // If currency is USD, rate is 1. If BDT, use the fetched rate.
+    const rateToStore = currency === "USD" ? 1 : currentRate;
+
     const amount = parseFloat(formData.get("amount") as string);
     const category = formData.get("category") as string;
     const date = new Date(formData.get("date") as string);
@@ -24,6 +30,7 @@ export async function createExpense(formData: FormData) {
         userName: session.user.name,
         amount,
         currency,
+        exchangeRate: rateToStore,
         category,
         date,
         description,
