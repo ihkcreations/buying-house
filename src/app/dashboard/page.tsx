@@ -1,15 +1,14 @@
 import { db } from "@/lib/db";
 import { OverviewCharts } from "@/components/dashboard/overview-charts";
 import { StatusDistribution } from "@/components/dashboard/status-distribution";
-import { DashboardFilter } from "@/components/dashboard/dashboard-filter"; // NEW
-import { ActionAlerts } from "@/components/dashboard/action-alerts"; // NEW
+import { DashboardFilter } from "@/components/dashboard/dashboard-filter";
+import { ActionAlerts } from "@/components/dashboard/action-alerts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowRight, Box, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { protectPage } from "@/lib/protect";
 import { startOfYear, startOfMonth, subMonths } from "date-fns";
-import { getExchangeRate } from "@/lib/currency";
 
 export default async function DashboardPage({
   searchParams,
@@ -18,7 +17,10 @@ export default async function DashboardPage({
 }) {
   // 1. AUTH & ROLES
   const user = await protectPage(["admin", "merchandiser", "commercial", "finance"]);
-  const showFinancials = ["admin", "finance"].includes(user.role);
+  
+  // PERMISSION LOGIC UPDATED:
+  const showFinancials = user.role === "admin"; // <--- ONLY ADMIN SEES REVENUE/PROFIT
+  const canApproveExpenses = ["admin", "finance"].includes(user.role); // <--- FINANCE SEES ALERTS
 
   // 2. DATE FILTER SETUP
   const sp = await searchParams;
@@ -37,17 +39,16 @@ export default async function DashboardPage({
       const end = startOfMonth(now);
       dateFilter = { gte: start, lt: end };
   }
-  // If 'all', dateFilter remains empty {}
 
   // 3. FETCH DATA
   const [orders, expenses, buyersCount] = await Promise.all([
-    // A. Orders (Filtered by Date)
+    // A. Orders
     db.order.findMany({
       where: { createdAt: dateFilter }, 
       select: { 
         id: true, totalValue: true, status: true, createdAt: true, orderNo: true, orderQty: true,
         buyer: { select: { name: true } },
-        costing: { select: { profitMargin: true, commissionPercent: true, totalCost: true } },
+        costing: { select: { profitMargin: true } },
         actualCosting: {
             select: {
                 fabricActual: true, trimsActual: true, printingActual: true,
@@ -61,7 +62,7 @@ export default async function DashboardPage({
       orderBy: { updatedAt: "desc" },
     }),
 
-    // B. Expenses (Only if allowed & Filtered by Date)
+    // B. Expenses (Only fetch if user is allowed to see Financials to save DB calls)
     showFinancials ? db.expense.findMany({
         where: { status: "APPROVED", date: dateFilter },
         select: { amount: true, currency: true, date: true, exchangeRate: true }
@@ -70,24 +71,26 @@ export default async function DashboardPage({
     db.buyer.count(),
   ]);
 
-  // 4. ALERTS LOGIC (Snapshot of NOW, ignores date filter usually)
+  // 4. ALERTS LOGIC
   const lateOrders = await db.timeAction.count({
       where: { 
           shipmentPlan: { lt: new Date() },
           order: { status: { notIn: ["SHIPPED", "CLOSED", "OCS_FINALIZED"] } }
       }
   });
-  const pendingExpenses = showFinancials ? await db.expense.count({ where: { status: "PENDING" } }) : 0;
-  // Missing docs logic is complex, keeping simple for now
+  
+  // Finance Team STILL sees pending expense alerts
+  const pendingExpenses = canApproveExpenses ? await db.expense.count({ where: { status: "PENDING" } }) : 0;
+  
   const alerts = { lateOrders, pendingExpenses, missingDocs: 0, total: lateOrders + pendingExpenses };
 
 
-  // 5. CALCULATE KPIs
+  // 5. KPI CALCULATIONS
   let totalRevenue = 0;
   let totalQty = 0;
   let grossOrderProfit = 0;
 
-  // Monthly Data Structure (0-11)
+  // Monthly Data Structure
   const monthlyData = new Array(12).fill(0).map((_, i) => ({
     name: new Date(0, i).toLocaleString('en-US', { month: 'short' }),
     revenue: 0,
@@ -98,39 +101,28 @@ export default async function DashboardPage({
     totalRevenue += order.totalValue;
     totalQty += order.orderQty;
     
-    // --- SMART PROFIT LOGIC (Your Working Logic) ---
-    let orderProfit = 0;
+    // Only calculate profit metrics if Admin
+    if (showFinancials) {
+        let orderProfit = 0;
+        if (order.actualCosting) {
+            const ac = order.actualCosting;
+            const totalActuals = Object.values(ac).reduce((a,b) => (typeof b === 'number' ? a+b : a), 0);
+            orderProfit = order.totalValue - (totalActuals as number);
+        } else if (order.costing) {
+            const dozens = order.orderQty / 12;
+            orderProfit = order.costing.profitMargin * dozens;
+        }
+        grossOrderProfit += orderProfit;
 
-    if (order.actualCosting) {
-        // PRIORITY 1: Actuals
-        const ac = order.actualCosting;
-        const totalActualExpenses = 
-            (ac.fabricActual || 0) + (ac.trimsActual || 0) + 
-            (ac.printingActual || 0) + (ac.embroideryActual || 0) + 
-            (ac.washingActual || 0) + (ac.cmActual || 0) +
-            (ac.labTestActual || 0) + (ac.inspectionActual || 0) + 
-            (ac.samplingActual || 0) + (ac.commercialActual || 0) + 
-            (ac.logisticsActual || 0);
-        
-        orderProfit = order.totalValue - totalActualExpenses;
-
-    } else if (order.costing) {
-        // PRIORITY 2: Budget
-        const dozens = order.orderQty / 12;
-        orderProfit = order.costing.profitMargin * dozens;
-    }
-
-    grossOrderProfit += orderProfit;
-
-    // Map to Chart
-    const m = new Date(order.createdAt).getMonth();
-    if (monthlyData[m]) {
+        // Chart Data
+        const m = new Date(order.createdAt).getMonth();
         monthlyData[m].revenue += order.totalValue;
         monthlyData[m].profit += orderProfit;
     }
   });
 
-  // Calculate Total Expenses (With History Rate)
+  // Subtract Expenses (Admin Only)
+  const EXCHANGE_RATE = 120;
   const totalOperationalExpenses = expenses.reduce((sum: number, e: any) => {
       let usdAmount = 0;
       if (e.currency === "USD") {
@@ -142,22 +134,20 @@ export default async function DashboardPage({
       return sum + usdAmount;
   }, 0);
 
-  // Apply Expenses to Chart
-  expenses.forEach((e: any) => {
-      const m = new Date(e.date).getMonth();
-      let val = 0;
-      if (e.currency === "USD") {
-          val = e.amount;
-      } else {
-          const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
-          val = e.amount / rate;
-      }
-      if (monthlyData[m]) {
-          monthlyData[m].profit -= val; 
-      }
-  });
+  if (showFinancials) {
+      expenses.forEach((e: any) => {
+          const m = new Date(e.date).getMonth();
+          let val = 0;
+          if (e.currency === "USD") {
+              val = e.amount;
+          } else {
+              const rate = e.exchangeRate > 0 ? e.exchangeRate : 120;
+              val = e.amount / rate;
+          }
+          if (monthlyData[m]) monthlyData[m].profit -= val; 
+      });
+  }
 
-  // FINAL NET PROFIT
   const trueNetProfit = grossOrderProfit - totalOperationalExpenses;
   const activeOrdersCount = orders.filter(o => o.status !== "SHIPPED" && o.status !== "CLOSED" && o.status !== "OCS_FINALIZED").length;
   const completedOrdersCount = orders.filter(o => ["SHIPPED", "CLOSED", "OCS_FINALIZED"].includes(o.status)).length;
@@ -171,7 +161,8 @@ export default async function DashboardPage({
         </h2>
         <div className="flex items-center gap-4">
             <DashboardFilter />
-            {user.role !== "finance" && user.role !== "commercial" && (
+            {/* Create Order: Only Admin & Merch */}
+            {["admin", "merchandiser"].includes(user.role) && (
                 <Link href="/orders/new">
                     <Button className="bg-slate-900 hover:bg-slate-800">Create New Order</Button>
                 </Link>
@@ -179,13 +170,12 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      {/* ALERTS */}
       <ActionAlerts alerts={alerts} />
 
-      {/* KPI CARDS */}
+      {/* --- KPI CARDS --- */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         
-        {/* 1. REVENUE (or QTY) */}
+        {/* 1. REVENUE vs VOLUME */}
         {showFinancials ? (
             <Card className="border-l-4 border-l-blue-600 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -210,7 +200,7 @@ export default async function DashboardPage({
             </Card>
         )}
 
-        {/* 2. PROFIT (or COMPLETED) */}
+        {/* 2. PROFIT vs COMPLETED */}
         {showFinancials ? (
             <Card className={`border-l-4 shadow-sm ${trueNetProfit >= 0 ? "border-l-green-500" : "border-l-red-500"}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -232,12 +222,12 @@ export default async function DashboardPage({
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{completedOrdersCount}</div>
-                    <p className="text-xs text-slate-500 mt-1">Shipped</p>
+                    <p className="text-xs text-slate-500 mt-1">Shipped Successfully</p>
                 </CardContent>
             </Card>
         )}
 
-        {/* 3. ACTIVE */}
+        {/* 3. ACTIVE (Everyone sees this) */}
         <Card className="border-l-4 border-l-orange-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Active Orders</CardTitle>
@@ -245,11 +235,11 @@ export default async function DashboardPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeOrdersCount}</div>
-            <p className="text-xs text-slate-500 mt-1">In Production</p>
+            <p className="text-xs text-slate-500 mt-1">In Pipeline</p>
           </CardContent>
         </Card>
 
-        {/* 4. CLIENTS */}
+        {/* 4. CLIENTS (Everyone sees this) */}
         <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">Clients</CardTitle>
@@ -262,15 +252,15 @@ export default async function DashboardPage({
         </Card>
       </div>
 
-      {/* CHARTS */}
+      {/* --- CHARTS --- */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-4">
             {showFinancials ? (
                 <OverviewCharts data={monthlyData} />
             ) : (
-                <div className="h-full bg-slate-50 border rounded-lg flex flex-col items-center justify-center text-slate-400">
-                    <TrendingUp className="w-12 h-12 mb-2 opacity-20" />
-                    <p>Financial charts restricted</p>
+                <div className="h-full bg-slate-50 border rounded-lg flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                    <TrendingUp className="w-12 h-12 mb-3 opacity-20" />
+                    <p className="font-medium">Financial Data Restricted</p>
                 </div>
             )}
         </div>
@@ -304,16 +294,26 @@ export default async function DashboardPage({
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="text-sm font-bold text-slate-900">
-                                ${order.totalValue.toLocaleString()}
+                        {/* Only show Order Value to Admin/Finance */}
+                        {showFinancials && (
+                            <div className="flex items-center gap-4">
+                                <div className="text-sm font-bold text-slate-900">
+                                    ${order.totalValue.toLocaleString()}
+                                </div>
+                                <Link href={`/orders/${order.id}`}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <ArrowRight className="h-4 w-4 text-slate-400" />
+                                    </Button>
+                                </Link>
                             </div>
-                            <Link href={`/orders/${order.id}`}>
+                        )}
+                        {!showFinancials && (
+                             <Link href={`/orders/${order.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <ArrowRight className="h-4 w-4 text-slate-400" />
                                 </Button>
                             </Link>
-                        </div>
+                        )}
                     </div>
                 ))
             )}
