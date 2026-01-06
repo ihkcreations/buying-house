@@ -10,12 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ExpenseForm({ orders }: { orders: any[] }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [currency, setCurrency] = useState("BDT");
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
+    formData.append("currency", currency);
     const result = await createExpense(formData);
     if(result?.error) toast.error(result.error);
     else {
@@ -29,12 +32,22 @@ export function ExpenseForm({ orders }: { orders: any[] }) {
     <Card className="border-slate-200 shadow-sm">
       <CardContent className="pt-6">
         <form action={handleSubmit} className="space-y-4">
+
+            {/* Currency Switcher */}
+            <div className="flex justify-center mb-4">
+                <Tabs value={currency} onValueChange={setCurrency} className="w-[200px]">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="BDT">৳ BDT</TabsTrigger>
+                        <TabsTrigger value="USD">$ USD</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
             
             {/* Amount & Date - Stacked on Mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label>Amount ($)</Label>
-                    <Input name="amount" type="number" step="0.01" required className="text-lg font-bold" placeholder="0.00" />
+                    <Label>Amount ({currency})</Label>
+                    <Input name="amount" type="number" step="0.01" required className="text-lg font-bold" />
                 </div>
                 <div className="space-y-2">
                     <Label>Date</Label>

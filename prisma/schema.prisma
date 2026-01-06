@@ -491,6 +491,8 @@ model Expense {
   status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
   
   receiptUrl String? // Image of bill
+
+  currency  String   @default("BDT")
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

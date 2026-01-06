@@ -2,40 +2,61 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Trash2, User } from "lucide-react";
+import { deleteExpense } from "@/app/actions/finance";
+import { toast } from "sonner";
 import { format } from "date-fns";
-import { DollarSign, Calendar, Tag } from "lucide-react";
 
-export function ExpenseList({ expenses }: { expenses: any[] }) {
-  if (expenses.length === 0) {
-      return <div className="text-center py-10 text-slate-500">No expenses found.</div>;
-  }
+export function ExpenseList({ expenses, isAdmin }: { expenses: any[], isAdmin: boolean }) {
+  
+  const handleDelete = async (id: string) => {
+      if(confirm("Delete this expense record?")) {
+          const res = await deleteExpense(id);
+          if(res.success) toast.success("Deleted");
+          else toast.error("Failed");
+      }
+  };
 
   return (
     <div className="grid gap-3">
         {expenses.map((exp) => (
-            <Card key={exp.id} className="p-4 flex flex-col gap-2 hover:bg-slate-50">
+            <Card key={exp.id} className="p-4 flex flex-col gap-2 relative group">
                 
-                {/* Header: Category & Amount */}
+                {/* Header */}
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="bg-white">{exp.category}</Badge>
-                            {exp.order && <Badge variant="secondary" className="text-[10px]">#{exp.order.orderNo}</Badge>}
+                            <Badge variant="outline">{exp.category}</Badge>
+                            {/* NEW: Show User Name */}
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                <User className="w-3 h-3"/> {exp.userName}
+                            </span>
                         </div>
-                        <p className="text-sm font-medium mt-1 text-slate-900">{exp.description || "No description"}</p>
+                        <p className="text-sm font-medium mt-1">{exp.description}</p>
                     </div>
                     <div className="text-right">
-                        <span className="text-lg font-bold text-slate-900">${exp.amount.toFixed(2)}</span>
+                        {/* NEW: Dynamic Symbol */}
+                        <span className="text-lg font-bold text-slate-900">
+                            {exp.currency === "USD" ? "$" : "৳"}{exp.amount.toLocaleString()}
+                        </span>
                     </div>
                 </div>
 
-                {/* Footer: Date & Status */}
+                {/* Footer */}
                 <div className="flex justify-between items-center pt-2 border-t mt-1">
-                    <div className="flex items-center text-xs text-slate-500">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {format(new Date(exp.date), "dd MMM yy")}
+                    <span className="text-xs text-slate-500">{format(new Date(exp.date), "dd MMM yy")}</span>
+                    
+                    <div className="flex items-center gap-2">
+                        <StatusBadge status={exp.status} />
+                        
+                        {/* NEW: Admin Delete Button */}
+                        {isAdmin && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-600" onClick={() => handleDelete(exp.id)}>
+                                <Trash2 className="w-3 h-3" />
+                            </Button>
+                        )}
                     </div>
-                    <StatusBadge status={exp.status} />
                 </div>
             </Card>
         ))}
