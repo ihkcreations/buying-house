@@ -70,7 +70,7 @@ const sidebarNav = [
     type: "accordion",
     items: [
       { title: "Expense Entry", href: "/finance/expense", icon: PlusCircle },
-      { title: "Approve Expense", href: "/finance/approve", icon: FileText, roles: ["admin", "finance"] },
+      { title: "Approve Expense", href: "/finance/approve", icon: FileText, roles: ["admin"] },
       { title: "Business Overview", href: "/finance/overview", icon: LayoutDashboard },
     ],
   },
@@ -163,10 +163,10 @@ export function AppSidebar() {
                     <AccordionContent className="pl-4 pt-1 pb-2">
                         <div className="flex flex-col space-y-1 border-l-2 border-slate-100 pl-2">
                         {item.items?.map((subItem, subIndex) => {
-                            if (subItem.roles && !subItem.roles.includes(userRole)) {
+                            if ('roles' in subItem &&subItem.roles && !subItem.roles.includes(userRole)) {
                                 return null;
                             }
-                            if (subItem.variant === "primary") {
+                            if ('variant' in subItem && subItem.variant === "primary") {
                             return (
                                 <Link key={subIndex} href={subItem.href}>
                                 <Button className="w-full justify-start gap-2 bg-blue-600 hover:bg-blue-700 text-white mb-2 shadow-sm">

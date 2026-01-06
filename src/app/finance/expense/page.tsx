@@ -24,7 +24,7 @@ export default async function ExpenseEntryPage({
       // Usually "My Expenses" page shows only mine. 
       // Admin dashboard shows all. Let's assume this page is "My Expenses".
       // If you want Admin to see everyone here, remove this line for Admin.
-      userId: user.role === "admin" ? undefined : user.id, 
+      // userId: user.role === "admin" ? undefined : user.id, 
       
       AND: []
   };
