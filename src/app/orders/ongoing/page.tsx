@@ -16,8 +16,8 @@ export default async function OrderListPage({
   const sp = await searchParams;
   const query = (sp.q as string) || "";
   const buyerId = (sp.buyer as string) || "all";
-  // Default to 'active' if nothing is in URL
-  const statusFilter = (sp.status as string) || "active"; 
+  // Default to 'all' if nothing is in URL
+  const statusFilter = (sp.status as string) || "all"; 
 
   // --- BUILD QUERY ---
   const where: any = { AND: [] };

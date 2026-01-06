@@ -1,28 +1,26 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, X, Filter } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function OrderFilters({ buyers }: { buyers: any[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname(); // <--- GET CURRENT PATH AUTOMATICALLY
 
   // State
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [buyerId, setBuyerId] = useState(searchParams.get("buyer") || "all");
-  const [status, setStatus] = useState(searchParams.get("status") || "active"); // Default to 'active'
-
+  const [status, setStatus] = useState(searchParams.get("status") || "all");
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => { setIsMounted(true); }, []);
 
   // Debounce Search
   useEffect(() => {
@@ -32,22 +30,21 @@ export function OrderFilters({ buyers }: { buyers: any[] }) {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (buyerId && buyerId !== "all") params.set("buyer", buyerId);
+      if (status) params.set("status", status); // Always preserve status state
       
-      // CRITICAL FIX: Always set status unless it's default 'active' AND no other params exist
-      // Actually, better to be explicit:
-      if (status) params.set("status", status); 
-      
-      router.push(`/orders/ongoing?${params.toString()}`);
+      // USE DYNAMIC PATHNAME instead of hardcoded string
+      router.push(`${pathname}?${params.toString()}`);
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [query, buyerId, status, isMounted, router]);
+  }, [query, buyerId, status, isMounted, router, pathname]);
 
   const clearFilters = () => {
     setQuery("");
     setBuyerId("all");
-    setStatus("active");
-    router.push("/orders/ongoing?status=active");
+    setStatus("all");
+    // Reset to current page with default status
+    router.push(`${pathname}?status=all`);
   };
 
   return (
@@ -57,7 +54,7 @@ export function OrderFilters({ buyers }: { buyers: any[] }) {
       <div className="relative flex-1">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
         <Input
-          placeholder="Search Order No, Style, or Season..."
+          placeholder="Search Order No, Style..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-9 bg-slate-50 border-slate-200"
@@ -89,7 +86,6 @@ export function OrderFilters({ buyers }: { buyers: any[] }) {
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="active">Active Orders</SelectItem>
             <SelectItem value="completed">Completed / Shipped</SelectItem>
-            {/* Detailed Statuses */}
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
             <SelectItem value="COSTING_APPROVED">Costing Approved</SelectItem>
