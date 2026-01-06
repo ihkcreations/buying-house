@@ -55,17 +55,22 @@ export async function savePI(orderId: string, formData: FormData) {
         documents: formData.get("term_docs") as string,
     };
 
+    const existingPI = await db.proformaInvoice.findUnique({ where: { orderId } });
+    const oldPiCount = existingPI ? 1 : 0; // Simple count: if PI existed, it was generated once before
+
     // --- 3. Save to DB ---
     await db.proformaInvoice.upsert({
       where: { orderId },
       update: payload, // Pass the flat object directly
       create: {
         orderId,
-        ...payload,      // Spread the flat object directly
+        ...payload,
+        ...(existingPI ? {} : { piGenerationCount: 1 })      // Spread the flat object directly
       },
     });
 
-    await logActivity("GENERATED_PI", `Updated Proforma Invoice`, orderId);
+    const generationLog = existingPI ? "Updated Proforma Invoice" : "Generated Proforma Invoice";
+    await logActivity("GENERATED_PI", `${generationLog}`, orderId);
 
     revalidatePath(`/commercial/orders/${orderId}`);
     return { success: "PI Saved Successfully!" };
@@ -111,7 +116,10 @@ export async function saveSC(orderId: string, formData: FormData) {
       create: { orderId, ...payload },
     });
 
-    await logActivity("GENERATED_SC", `Updated Sales Contract`, orderId);
+    const existingSC = await db.salesContract.findUnique({ where: { orderId } });
+    const generationLog = existingSC ? "Updated Sales Contract" : "Generated Sales Contract";
+
+    await logActivity("GENERATED_SC", generationLog, orderId);
 
     revalidatePath(`/commercial/orders/${orderId}`);
     return { success: "SC Saved Successfully!" };
@@ -198,4 +206,42 @@ export async function deleteCommercialDoc(id: string, orderId: string) {
     } catch (error) {
         return { error: "Failed to delete" };
     }
+}
+
+export async function logDocumentGeneration(orderId: string, type: "PI" | "SC") {
+  try {
+    let newCount = 0;
+
+    if (type === "PI") {
+      const pi = await db.proformaInvoice.findUnique({ where: { orderId } });
+      if (!pi) return;
+      newCount = pi.generationCount + 1;
+      
+      await db.proformaInvoice.update({
+        where: { orderId },
+        data: { generationCount: newCount }
+      });
+    } else {
+      const sc = await db.salesContract.findUnique({ where: { orderId } });
+      if (!sc) return;
+      newCount = sc.generationCount + 1;
+
+      await db.salesContract.update({
+        where: { orderId },
+        data: { generationCount: newCount }
+      });
+    }
+
+    // Log to Activity Table
+    await logActivity(
+        `GENERATED_${type}`, 
+        `Generated ${type} PDF (Total downloads: ${newCount})`, 
+        orderId
+    );
+
+    return { success: true, count: newCount };
+  } catch (error) {
+    console.error("Log Error:", error);
+    return { error: "Failed to log download" };
+  }
 }

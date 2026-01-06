@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select"; // New Import
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { SCDocument } from "@/components/pdf/sc-template";
+import { logDocumentGeneration } from "@/app/actions/commercial";
 
 export function SCGenerator({
   order,
@@ -138,6 +139,12 @@ and documents received DATE” on the AWB. This applies to Purchase Orders place
     if (result?.error) toast.error(result.error);
     else toast.success(result.success);
     setIsLoading(false);
+  };
+
+  const handleDownloadLog = async () => {
+      // Fire and forget (don't block the download)
+      await logDocumentGeneration(order.id, "SC");
+      toast.success("Download Logged");
   };
 
   if (!pi) {
@@ -434,19 +441,21 @@ and documents received DATE” on the AWB. This applies to Purchase Orders place
         </div>
         <div className="flex gap-3 pr-4">
           {isClient && sc ? (
-            <PDFDownloadLink
-              document={
-                <SCDocument order={order} pi={pi} sc={sc} settings={settings} />
-              }
-              fileName={`SC-${sc.scNumber}.pdf`}
-            >
-              {({ loading }) => (
-                <Button type="button" variant="outline" disabled={loading}>
-                  <Printer className="w-4 h-4 mr-2" />{" "}
-                  {loading ? "Generating..." : "Download PDF"}
-                </Button>
-              )}
-            </PDFDownloadLink>
+            <div onClick={handleDownloadLog}>
+              <PDFDownloadLink
+                document={
+                  <SCDocument order={order} pi={pi} sc={sc} settings={settings} />
+                }
+                fileName={`${sc.scNumber}.pdf`}
+              >
+                {({ loading }) => (
+                  <Button type="button" variant="outline" disabled={loading}>
+                    <Printer className="w-4 h-4 mr-2" />{" "}
+                    {loading ? "Generating..." : "Download PDF"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            </div>
           ) : (
             <Button type="button" variant="outline" disabled>
               <Printer className="w-4 h-4 mr-2" /> Save to Print

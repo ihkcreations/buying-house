@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { PIDocument } from "@/components/pdf/pi-template";
+import { logDocumentGeneration } from "@/app/actions/commercial";
 
 export function PIGenerator({ 
   order, 
@@ -110,6 +111,12 @@ export function PIGenerator({
     if (result?.error) toast.error(result.error);
     else toast.success(result.success);
     setIsLoading(false);
+  };
+
+  const handleDownloadLog = async () => {
+      // Fire and forget (don't block the download)
+      await logDocumentGeneration(order.id, "PI");
+      toast.success("Download Logged");
   };
 
   return (
@@ -257,16 +264,18 @@ export function PIGenerator({
           </div>
           <div className="flex gap-3 pr-4">
               {isClient && existingPI ? (
-                <PDFDownloadLink
-                    document={<PIDocument order={order} pi={existingPI} settings={settings} />}
-                    fileName={`PI-${existingPI.piNumber}.pdf`}
-                >
-                    {({ loading }) => (
-                        <Button type="button" variant="outline" disabled={loading}>
-                            <Printer className="w-4 h-4 mr-2" /> {loading ? "Generating..." : "Download PDF"}
-                        </Button>
-                    )}
-                </PDFDownloadLink>
+                <div onClick={handleDownloadLog}>
+                    <PDFDownloadLink
+                        document={<PIDocument order={order} pi={existingPI} settings={settings} />}
+                        fileName={`${existingPI.piNumber}.pdf`}
+                    >
+                        {({ loading }) => (
+                            <Button type="button" variant="outline" disabled={loading}>
+                                <Printer className="w-4 h-4 mr-2" /> {loading ? "Generating..." : "Download PDF"}
+                            </Button>
+                        )}
+                    </PDFDownloadLink>
+                </div>
               ) : (
                 <Button type="button" variant="outline" disabled><Printer className="w-4 h-4 mr-2" /> Save to Print</Button>
               )}

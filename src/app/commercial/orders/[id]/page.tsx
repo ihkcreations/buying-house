@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { PIGenerator } from "@/components/commercial/pi-generator";
 import { SCGenerator } from "@/components/commercial/sc-generator";
-import { PackingGenerator } from "@/components/commercial/packing-generator";
+// import { PackingGenerator } from "@/components/commercial/packing-generator";
 import { DocManager } from "@/components/commercial/doc-manager";
 import { getCompanySettings } from "@/app/actions/settings";
 import { protectPage } from "@/lib/protect";
@@ -77,9 +77,9 @@ export default async function CommercialOrderPage({
             <Link href={`/commercial/orders/${id}?tab=docs`}>Manage Documents</Link>
           </TabsTrigger>
 
-          <TabsTrigger value="pl" asChild className={tabTriggerClass}>
+          {/* <TabsTrigger value="pl" asChild className={tabTriggerClass}>
             <Link href={`/commercial/orders/${id}?tab=pl`}>Packing List (PL) Calculator</Link>
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         {/* Tab 1: PI */}
@@ -110,10 +110,10 @@ export default async function CommercialOrderPage({
             />
         </TabsContent>
 
-        {/* Tab 4: PL */}
+        {/* Tab 4: PL
         <TabsContent value="pl">
           <PackingGenerator order={order} pl={order.packingList} />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );

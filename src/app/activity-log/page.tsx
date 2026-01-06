@@ -125,7 +125,14 @@ export default async function ActivityLogPage({
                                         <div className="p-1.5 rounded-full bg-white border shadow-sm">
                                             {getIcon(log.action)}
                                         </div>
-                                        <p className="text-sm text-slate-700">{log.details}</p>
+                                        <p className="text-sm text-slate-700">
+                                            {log.details} 
+                                            {/* --- ADD COUNT HERE --- */}
+                                            {log.documentCount && log.action.includes("GENERATED") && (
+                                                <span className="text-xs text-slate-500 ml-2"> (Count: {log.documentCount})</span>
+                                            )}
+                                            {/* ---------------------- */}
+                                        </p>
                                     </div>
                                     {log.order && (
                                         <Link href={`/orders/${log.orderId}`}>

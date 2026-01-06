@@ -259,6 +259,8 @@ model ProformaInvoice {
 
   // Items are complex (style, article, dates), so we keep them as JSON
   items     Json 
+
+  generationCount Int @default(0)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -299,6 +301,8 @@ model SalesContract {
   // --- LONG TEXT BLOCKS ---
   docRequired     String? // "Documents Required"
   lateClause      String? // "Late Delivery Clause" (The big text block)
+
+  generationCount Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -434,6 +438,8 @@ model ActivityLog {
   // What happened?
   action    String   // e.g. "UPDATED_COSTING", "CREATED_PI"
   details   String   // e.g. "Approved Costing for Order #1099"
+
+  documentCount Int?
   
   // Related to which Order? (Optional, but recommended)
   orderId   String?  @db.ObjectId
