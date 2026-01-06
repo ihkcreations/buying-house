@@ -60,9 +60,8 @@ const sidebarNav = [
     type: "accordion",
     roles: ["admin", "commercial"],
     items: [
-      { title: "Ongoing Order", href: "/commercial/ongoing", icon: ClipboardList },
+      { title: "Order List", href: "/commercial/ongoing", icon: ClipboardList },
       { title: "Manage Documents", href: "/commercial/documents", icon: FileText },
-      { title: "All Orders", href: "/commercial/all", icon: LayoutDashboard },
     ],
   },
   {
