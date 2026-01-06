@@ -51,9 +51,7 @@ const sidebarNav = [
     roles: ["admin", "merchandiser"],
     items: [
       { title: "Create New Order", href: "/orders/new", icon: PlusCircle, variant: "primary" },
-      { title: "Ongoing Order", href: "/orders/ongoing", icon: ClipboardList },
-      { title: "Manage Documents", href: "/orders/documents", icon: FileText },
-      { title: "All Orders", href: "/orders/all", icon: LayoutDashboard },
+      { title: "Order List", href: "/orders/ongoing", icon: ClipboardList },
     ],
   },
   {
