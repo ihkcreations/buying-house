@@ -16,8 +16,19 @@ import { UploadButton } from "@/utils/uploadthing";
 import Link from "next/link";
 
 const DOC_TYPES = [
-    "Master L/C", "L/C Amendment", "Sales Contract", "Purchase Order", 
-    "Commercial Invoice", "Packing List", "Bill of Lading", "Certificate of Origin", "Inspection Report", "Other"
+    "Purchase Order (P.O)", 
+    "Master L/C", 
+    "L/C Amendment", 
+    "Sales Contract", 
+    "Commercial Invoice", 
+    "Packing List", 
+    "Dummy B/L",
+    "Original B/L",   
+    "Certificate of Origin", 
+    "GSP Certificate", 
+    "Utilization Declaration (U.D)",
+    "Inspection Report", 
+    "Other"
 ];
 
 export function DocManager({ orderId, docs }: { orderId: string, docs: any[] }) {
@@ -63,7 +74,7 @@ export function DocManager({ orderId, docs }: { orderId: string, docs: any[] }) 
   const getDocsByType = (typeGroup: string[]) => docs.filter(d => typeGroup.some(t => d.name.startsWith(t)));
 
   const bankingDocs = getDocsByType(["Master L/C", "L/C Amendment", "Sales Contract", "Purchase Order"]);
-  const shippingDocs = getDocsByType(["Commercial Invoice", "Packing List", "Bill of Lading"]);
+  const shippingDocs = getDocsByType(["Commercial Invoice", "Packing List", "Dummy B/L", "Original B/L", "Certificate of Origin", "GSP Certificate", "Utilization Declaration", "Inspection Report"]);
   const otherDocs = docs.filter(d => !bankingDocs.includes(d) && !shippingDocs.includes(d));
 
   const renderTable = (title: string, list: any[]) => (
@@ -144,21 +155,21 @@ export function DocManager({ orderId, docs }: { orderId: string, docs: any[] }) 
                             <Input value={refNo} onChange={(e) => setRefNo(e.target.value)} placeholder="e.g. Amendment 02" />
                         </div>
                         <div className="space-y-2">
-                            <Label>File Attachment (PDF/Image)</Label>
+                            <Label>File Attachment (PDF/WORD/EXCEL/JPG/PNG)</Label>
                             {uploadedUrl ? (
                                 <div className="flex items-center gap-2 p-2 border rounded bg-green-50 text-green-700 text-sm">
                                     <CheckCircle className="w-4 h-4" /> File Ready
                                     <Button variant="ghost" size="sm" onClick={() => setUploadedUrl(null)} className="ml-auto text-xs h-6">Change</Button>
                                 </div>
                             ) : (
-                                <div className="border-2 border-dashed rounded-md p-6 flex justify-center bg-slate-400">
+                                <div className="border-2 border-dashed rounded-md p-6 flex justify-center bg-zinc-300">
                                     <UploadButton
                                         
                                         endpoint="commercialDoc"
                                         onClientUploadComplete={(res) => {
                                             if(res?.[0]) setUploadedUrl(res[0].url);
                                         }}
-                                        onUploadError={(error: Error) => toast.error(error.message)}
+                                        onUploadError={(error) =>{ toast.error(error.message)}}
                                     />
                                 </div>
                             )}

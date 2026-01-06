@@ -82,6 +82,8 @@ model Order {
 
   actualCosting   ActualCosting?
   activityLogs    ActivityLog[]
+
+  packingList     PackingList?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -438,4 +440,26 @@ model ActivityLog {
   order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
+}
+
+model PackingList {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @unique @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  invoiceNo String   // Usually same as Commercial Invoice No
+  date      DateTime
+  
+  // Carton Specs
+  totalCartons  Int
+  cartonSize    String // "60x40x30 cm"
+  netWeight     Float  // Total NW
+  grossWeight   Float  // Total GW
+  cbm           Float  // Cubic Meter Volume
+  
+  // Content
+  description   String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

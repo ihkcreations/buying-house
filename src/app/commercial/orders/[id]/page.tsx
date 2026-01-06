@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { PIGenerator } from "@/components/commercial/pi-generator";
 import { SCGenerator } from "@/components/commercial/sc-generator";
+import { PackingGenerator } from "@/components/commercial/packing-generator";
 import { DocManager } from "@/components/commercial/doc-manager";
 import { getCompanySettings } from "@/app/actions/settings";
 import { protectPage } from "@/lib/protect";
@@ -33,6 +34,7 @@ export default async function CommercialOrderPage({
         proformaInvoice: true,
         salesContract: true,
         commercialDocs: true,
+        packingList: true
     },
   });
 
@@ -69,11 +71,15 @@ export default async function CommercialOrderPage({
           <TabsTrigger value="sc" asChild className={tabTriggerClass}>
             <Link href={`/commercial/orders/${id}?tab=sc`}>Sales Contract (SC)</Link>
           </TabsTrigger>
+
           
           <TabsTrigger value="docs" asChild className={tabTriggerClass}>
             <Link href={`/commercial/orders/${id}?tab=docs`}>Manage Documents</Link>
           </TabsTrigger>
 
+          <TabsTrigger value="pl" asChild className={tabTriggerClass}>
+            <Link href={`/commercial/orders/${id}?tab=pl`}>Packing List (PL) Calculator</Link>
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: PI */}
@@ -94,6 +100,7 @@ export default async function CommercialOrderPage({
                 settings={settings}
             />
         </TabsContent>
+
         
         {/* Tab 3: Docs */}
         <TabsContent value="docs">
@@ -101,6 +108,11 @@ export default async function CommercialOrderPage({
                 orderId={order.id} 
                 docs={order.commercialDocs} 
             />
+        </TabsContent>
+
+        {/* Tab 4: PL */}
+        <TabsContent value="pl">
+          <PackingGenerator order={order} pl={order.packingList} />
         </TabsContent>
       </Tabs>
     </div>
