@@ -84,6 +84,8 @@ model Order {
   activityLogs    ActivityLog[]
 
   packingList     PackingList?
+
+  expenses        Expense[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -465,6 +467,30 @@ model PackingList {
   
   // Content
   description   String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- 14. FINANCE / EXPENSES ---
+model Expense {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  userId    String   // Who spent it (BetterAuth ID)
+  userName  String   // Cache name for display
+  
+  category  String   // Travel, Food, Sample, Courier, Other
+  amount    Float
+  date      DateTime
+  description String?
+  
+  // Optional: Link to Order
+  orderId   String?  @db.ObjectId
+  order     Order?   @relation(fields: [orderId], references: [id])
+  
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  
+  receiptUrl String? // Image of bill
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
