@@ -15,7 +15,10 @@ export function ExpenseChart({ data }: { data: any[] }) {
                     <BarChart data={data}>
                         <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip 
-                            formatter={(value: number) => `৳${value.toLocaleString()}`}
+                            formatter={(value: number | undefined) => {
+                                if (value === undefined) return '';
+                                return `৳${value.toLocaleString()}`;
+                            }}
                             cursor={{fill: 'transparent'}}
                         />
                         <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={35} />

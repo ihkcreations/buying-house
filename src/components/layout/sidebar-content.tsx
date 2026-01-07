@@ -154,7 +154,11 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
 
                 // ACCORDION
                 // Check if user has access to any child items before rendering parent
-                const hasAccessToChildren = item.items?.some(sub => !sub.roles || sub.roles.includes(userRole));
+                const hasAccessToChildren = item.items?.some(sub => {
+                    // Cast 'sub' to any to access optional 'roles' property safely
+                    const r = (sub as any).roles;
+                    return !r || r.includes(userRole);
+                });
                 if (!hasAccessToChildren) return null;
 
                 const shouldBeOpen = 
@@ -172,7 +176,10 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
                         <div className="flex flex-col space-y-1 border-l-2 border-slate-100 pl-2">
                         {item.items?.map((subItem, subIndex) => {
                             // Sub-item Role Check
-                            if ('roles' in subItem && subItem.roles && !subItem.roles.includes(userRole)) return null;
+                            const roles = (subItem as any).roles;
+                            if (roles && !roles.includes(userRole)) return null;
+
+                             const variant = (subItem as any).variant;
 
                             return (
                                 <Link key={subIndex} href={subItem.href} onClick={onLinkClick}>
@@ -181,7 +188,7 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
                                         className={cn(
                                             "w-full justify-start gap-2 h-9 font-normal text-slate-600",
                                             pathname === subItem.href && "bg-blue-50 text-blue-700 font-medium",
-                                            subItem.variant === "primary" && "bg-blue-600 hover:bg-blue-700 text-white mb-2 shadow-sm font-medium"
+                                            variant === "primary" && "bg-blue-600 hover:bg-blue-700 text-white mb-2 shadow-sm font-medium"
                                         )}
                                     >
                                     <subItem.icon className="h-4 w-4" /> {subItem.title}

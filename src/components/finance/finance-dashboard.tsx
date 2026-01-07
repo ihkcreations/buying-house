@@ -99,7 +99,10 @@ export function FinanceDashboard({
                             <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`}/>
                             <Tooltip 
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                formatter={(value: number) => `$${value.toLocaleString()}`}
+                                formatter={(value: number | undefined) => {
+                                    if (value === undefined) return '';
+                                    return `$${value.toLocaleString()}`;
+                                }}
                             />
                             
                             {/* Bars for Income/Expense */}
@@ -172,7 +175,10 @@ export function FinanceDashboard({
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(val: number) => `$${val.toLocaleString()}`} />
+                                <Tooltip formatter={(val: number | undefined) => {
+                                    if (val === undefined) return '';
+                                    return `$${val.toLocaleString()}`;
+                                }} />
                                 <Legend verticalAlign="bottom" height={36}/>
                             </PieChart>
                         </ResponsiveContainer>

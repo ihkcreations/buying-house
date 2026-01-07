@@ -202,7 +202,7 @@ export function OrderForm({ buyers }: { buyers: any[] }) {
                         toast.success("File uploaded successfully!");
                     }
                 }}
-                onUploadError={(error: Error) => toast.error(`Upload failed: ${error.message}`)}
+                onUploadError={(error: Error) => {toast.error(`Upload failed: ${error.message}}`)}}
                 className="ut-label:text-blue-600 ut-button:bg-slate-900 ut-button:hover:bg-slate-800"
                 appearance={{
                     container: "border-2 border-dashed border-slate-300 rounded-lg p-8 bg-slate-50/50 hover:bg-slate-50 transition-colors w-full cursor-pointer min-h-[200px] flex flex-col justify-center",

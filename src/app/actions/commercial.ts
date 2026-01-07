@@ -21,10 +21,10 @@ export async function savePI(orderId: string, formData: FormData) {
 
     // Construct the JSON Array for Items
     const items = styles.map((_, index) => ({
-        styleOrder: styles[index],
-        article: articles[index],
-        description: descs[index],
-        shippingDate: shipDates[index],
+        styleOrder: styles[index] as string,
+        article: articles[index] as string,
+        description: descs[index] as string,
+        shippingDate: shipDates[index] as string,
         qty: parseInt(qtys[index] as string) || 0,
         rate: parseFloat(rates[index] as string) || 0,
         amount: parseFloat(amounts[index] as string) || 0,

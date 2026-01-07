@@ -65,7 +65,10 @@ export function OverviewCharts({ data }: { data: any[] }) {
               
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                formatter={(value: number) => `$${value.toLocaleString()}`}
+                formatter={(value: number | undefined) => {
+                  if (value === undefined) return '';
+                  return `$${value.toLocaleString()}`;
+                }}
               />
 
               {/* REVENUE LINE */}

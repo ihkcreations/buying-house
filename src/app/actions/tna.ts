@@ -6,23 +6,36 @@ import { logActivity } from "@/lib/logger";
 
 export async function saveTNA(orderId: string, formData: FormData) {
   try {
-    // Helper to parse date strings from form (YYYY-MM-DD) to ISO Date objects
-    const getDate = (key: string) => {
+    // Helper for Optional fields (Can be set to null in DB)
+    const getNullableDate = (key: string) => {
       const val = formData.get(key) as string;
       return val ? new Date(val) : null;
     };
 
+    // Helper for Mandatory fields (Cannot be null)
+    // If empty, return undefined so Prisma ignores it during update
+    const getMandatoryDate = (key: string) => {
+      const val = formData.get(key) as string;
+      return val ? new Date(val) : undefined;
+    };
+
+    const shipmentPlan = getMandatoryDate("shipmentPlan");
+
     const payload = {
-      labDipPlan: getDate("labDipPlan"),
-      labDipActual: getDate("labDipActual"),
-      fabricPlan: getDate("fabricPlan"),
-      fabricActual: getDate("fabricActual"),
-      cuttingPlan: getDate("cuttingPlan"),
-      cuttingActual: getDate("cuttingActual"),
-      sewingPlan: getDate("sewingPlan"),
-      sewingActual: getDate("sewingActual"),
-      shipmentPlan: getDate("shipmentPlan"), // Usually mandatory
-      shipmentActual: getDate("shipmentActual"),
+      labDipPlan: getNullableDate("labDipPlan"),
+      labDipActual: getNullableDate("labDipActual"),
+      fabricPlan: getNullableDate("fabricPlan"),
+      fabricActual: getNullableDate("fabricActual"),
+      cuttingPlan: getNullableDate("cuttingPlan"),
+      cuttingActual: getNullableDate("cuttingActual"),
+      sewingPlan: getNullableDate("sewingPlan"),
+      sewingActual: getNullableDate("sewingActual"),
+      shipmentActual: getNullableDate("shipmentActual"),
+      
+      // Use the specific logic for the mandatory field
+      // If 'undefined', update will ignore it.
+      // If 'undefined' during create, we handle it in the create block below.
+      shipmentPlan: shipmentPlan, 
     };
 
     // Upsert (Update if exists, Create if not)
@@ -31,9 +44,9 @@ export async function saveTNA(orderId: string, formData: FormData) {
       update: payload,
       create: {
         orderId,
-        // If creating new, ensure shipmentPlan is valid or handle nulls
-        shipmentPlan: payload.shipmentPlan || new Date(), 
+        // For creation, shipmentPlan MUST exist. Fallback to NOW if missing.
         ...payload,
+        shipmentPlan: payload.shipmentPlan || new Date(), 
       },
     });
 

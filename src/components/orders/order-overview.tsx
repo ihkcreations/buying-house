@@ -152,7 +152,10 @@ export function OrderOverview({ order }: { order: any }) {
                 <BarChart data={financialData} layout="vertical" margin={{ left: 20 }}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={60} tick={{fontSize: 12}} />
-                  <Tooltip cursor={{fill: 'transparent'}} formatter={(value: number) => `$${value.toLocaleString()}`} />
+                  <Tooltip cursor={{fill: 'transparent'}} formatter={(value: number | undefined) => {
+                    if (value === undefined) return '';
+                    return `$${value.toLocaleString()}`;
+                  }} />
                   <Bar dataKey="value" barSize={24} radius={[0, 4, 4, 0]}>
                     {financialData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
                   </Bar>
