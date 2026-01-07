@@ -79,19 +79,27 @@ export async function adminResetPassword(userId: string, newPass: string) {
     if (role !== "super_admin") {
         return { error: "Only Super Admin can reset passwords." };
     }
+
+    const targetUser = await db.user.findUnique({ where: { id: userId } });
+    if (!targetUser) return { error: "User not found" };
     
-    // Update Password using Better Auth API (Handles Hashing)
+    // --- FIX: Use the specific Admin Plugin method ---
     await auth.api.setUserPassword({
         body: {
-            userId: userId,
-            newPassword: newPass
+            userId: userId,      // The target user's ID
+            newPassword: newPass // The new password
         },
-        headers: await headers()
+        headers: await headers() // Pass the Super Admin's session headers
     });
+    // ------------------------------------------------
 
-    await logActivity("RESET_PASSWORD", `Reset password for user ID: ${userId}`);
+    await logActivity("RESET_PASSWORD", `Reset password for user ${targetUser.name} (${targetUser.role})`);
     return { success: "Password reset successfully." };
-  } catch (error) {
-    return { error: "Failed to reset password." };
+  } catch (error: any) {
+    console.error("Reset Error:", error);
+    return { 
+        // Better Auth errors usually come in error.body.message or error.message
+        error: error?.body?.message || "Failed to reset password." 
+    };
   }
 }
