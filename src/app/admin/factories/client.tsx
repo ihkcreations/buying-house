@@ -93,7 +93,7 @@ export function FactoryClient({ initialFactories, userRole }: { initialFactories
                           <Pencil className="w-4 h-4 mr-2" /> Edit
                         </DropdownMenuItem>
                         {/* CONDITIONAL RENDER: Only Admin can see Delete */}
-                        {userRole === "admin" && (
+                        {(userRole === "admin" || userRole === "super_admin") && (
                             <DropdownMenuItem onClick={() => setDeletingId(f.id)} className="text-red-600">
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
                             </DropdownMenuItem>

@@ -4,7 +4,7 @@ import { protectPage } from "@/lib/protect";
 
 export default async function ManageBuyersPage() {
   // Allow these roles to enter
-  const user = await protectPage(["admin", "merchandiser", "commercial"]);
+  const user = await protectPage(["super_admin", "admin", "merchandiser", "commercial"]);
 
   const buyers = await db.buyer.findMany({
     orderBy: { name: "asc" },

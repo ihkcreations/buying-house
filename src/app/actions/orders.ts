@@ -73,7 +73,7 @@ export async function deleteOrder(orderId: string) {
     const role = (session?.user as any)?.role;
 
     // 2. Only ADMIN can delete Orders
-    if (role !== "admin") {
+    if (role !== "admin" && role !== "super_admin") {
         return { error: "Unauthorized. Only Admins can delete orders." };
     }
 

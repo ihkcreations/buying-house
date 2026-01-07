@@ -3,7 +3,7 @@ import { FactoryClient } from "./client";
 import { protectPage } from "@/lib/protect";
 
 export default async function ManageFactoriesPage() {
-  const user = await protectPage(["admin", "merchandiser", "commercial"]);
+  const user = await protectPage(["super_admin", "admin", "merchandiser", "commercial"]);
 
   const factories = await db.factory.findMany({
     orderBy: { name: "asc" },
