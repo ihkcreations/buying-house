@@ -35,20 +35,20 @@ const sidebarNav = [
     href: "/dashboard",
     icon: LayoutDashboard,
     type: "link",
-    roles: ["admin", "merchandiser", "commercial", "finance"]
+    roles: ["super_admin", "admin", "merchandiser", "commercial", "finance"]
   },
   {
     title: "Activity Log",
     href: "/activity-log",
     icon: ClipboardList,
     type: "link",
-    roles: ["admin", "merchandiser", "commercial", "finance"]
+    roles: ["super_admin", "admin", "merchandiser", "commercial", "finance"]
   },
   {
     title: "Merchandiser",
     icon: Store,
     type: "accordion",
-    roles: ["admin", "merchandiser"],
+    roles: ["super_admin", "admin", "merchandiser"],
     items: [
       { title: "Create New Order", href: "/orders/new", icon: PlusCircle, variant: "primary" },
       { title: "Order List", href: "/orders/ongoing", icon: ClipboardList },
@@ -58,7 +58,7 @@ const sidebarNav = [
     title: "Commercial",
     icon: Briefcase,
     type: "accordion",
-    roles: ["admin", "commercial"],
+    roles: ["super_admin", "admin", "commercial"],
     items: [
       { title: "Order List", href: "/commercial/ongoing", icon: ClipboardList },
       { title: "Manage Documents", href: "/commercial/documents", icon: FileText },
@@ -78,13 +78,13 @@ const sidebarNav = [
           title: "Approve Expense", 
           href: "/finance/approve", 
           icon: FileText,
-          roles: ["admin"]
+          roles: ["super_admin", "admin"]
       },
       { 
           title: "Business Overview", 
           href: "/finance/overview", 
           icon: LayoutDashboard,
-          roles: ["admin"] 
+          roles: ["super_admin", "admin"] 
       },
     ],
   },
@@ -93,7 +93,7 @@ const sidebarNav = [
     href: "/users",
     icon: Users,
     type: "link",
-    roles: ["admin"],
+    roles: ["super_admin", "admin"],
   },
 ];
 
@@ -110,6 +110,9 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   };
 
   const filteredNav = sidebarNav.filter(item => {
+    // SUPER ADMIN sees everything
+      if (userRole === "super_admin") return true;
+
       if (item.roles) return item.roles.includes(userRole);
       return true; // If no roles defined on parent, show it (items logic handles children)
   });
@@ -198,7 +201,7 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
 
       {/* FOOTER */}
       <div className="border-t p-3 space-y-1">
-        {["admin", "merchandiser", "commercial"].includes(userRole) && (
+        {["admin", "super_admin", "merchandiser", "commercial"].includes(userRole) && (
             <>
                 <Link href="/admin/buyers" onClick={onLinkClick}>
                     <Button variant="ghost" className="w-full justify-start gap-3 text-slate-600"><Users className="h-4 w-4" /> Manage Buyers</Button>

@@ -68,7 +68,10 @@ export async function deleteExpense(id: string) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     // @ts-ignore
-    if (session?.user?.role !== "admin") return { error: "Only Admin can delete expenses" };
+    const role = (session?.user as any)?.role;
+    if (role !== "admin" && role !== "super_admin") {
+        return { error: "Only Admin can delete expenses" };
+    }
 
     const expense = await db.expense.findUnique({ where: { id } });
     if (!expense) return { error: "Not found" };

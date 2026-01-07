@@ -19,8 +19,8 @@ export default async function DashboardPage({
   const user = await protectPage(["admin", "merchandiser", "commercial", "finance"]);
   
   // PERMISSION LOGIC UPDATED:
-  const showFinancials = user.role === "admin"; // <--- ONLY ADMIN SEES REVENUE/PROFIT
-  const canApproveExpenses = ["admin", "finance"].includes(user.role); // <--- FINANCE SEES ALERTS
+  const showFinancials = ["super_admin", "admin"].includes(user.role); // <--- ONLY ADMIN SEES REVENUE/PROFIT
+  const canApproveExpenses = user.role === "admin"; // <--- FINANCE SEES ALERTS
 
   // 2. DATE FILTER SETUP
   const sp = await searchParams;

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     });
 
     const currentUserRole = (session?.user as any)?.role;
-    if (currentUserRole !== "admin") {
+    if (currentUserRole !== "admin" && currentUserRole !== "super_admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

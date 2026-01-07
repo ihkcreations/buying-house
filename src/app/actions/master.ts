@@ -53,8 +53,10 @@ export async function deleteBuyer(id: string) {
   try {
     // SECURITY CHECK
     const session = await auth.api.getSession({ headers: await headers() });
-    if ((session?.user as any)?.role !== "admin") {
-        return { error: "Unauthorized. Only Admins can delete." };
+    const role = (session?.user as any)?.role;
+    
+    if (role !== "admin" && role !== "super_admin") {
+        return { error: "Unauthorized." };
     }
 
     await db.buyer.delete({ where: { id } });

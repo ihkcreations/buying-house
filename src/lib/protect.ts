@@ -18,10 +18,11 @@ export async function protectPage(allowedRoles: string[]) {
   const user = session.user as any; // Cast to access custom 'role' field
   const userRole = user.role || "guest";
 
-  // 1. Admin can access EVERYTHING
-  if (userRole === "admin") {
+  // 1. SUPER ADMIN: Access Everything immediately
+  if (userRole === "super_admin") {
     return user;
   }
+
 
   // 2. Check if the user's role is in the allowed list
   if (!allowedRoles.includes(userRole)) {
