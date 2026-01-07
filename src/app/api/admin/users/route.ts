@@ -1,61 +1,54 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth"; // Your server-side auth instance
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db"; // <--- Import Prisma
 import { headers } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    // 1. Security Check: Get Current User Session
+    // 1. Security Check (Only Admin/Super Admin allowed)
     const session = await auth.api.getSession({
         headers: await headers()
     });
-
     const currentUserRole = (session?.user as any)?.role;
 
-    // Must be at least an Admin to access this route
     if (currentUserRole !== "admin" && currentUserRole !== "super_admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 2. Parse Request Body
     const body = await req.json();
     const { email, password, name, role } = body;
 
-    // 3. HIERARCHY CHECK (The New Logic)
-    // If trying to create a high-privilege account ('admin' or 'super_admin')
+    // 2. Hierarchy Check
     if (role === "admin" || role === "super_admin") {
-        // Only Super Admin can do this
         if (currentUserRole !== "super_admin") {
-            return NextResponse.json({ 
-                error: "Permission Denied: Only Super Admin can create Admin accounts." 
-            }, { status: 403 });
+            return NextResponse.json({ error: "Only Super Admin can create Admins." }, { status: 403 });
         }
     }
 
-    // 4. Create User using Better Auth Server API
-    // We pass 'asResponse: true' to get the full response object
+    // 3. Create User (Standard / Safe Creation)
+    // We DO NOT pass 'role' here. It defaults to 'merchandiser'.
     const res = await auth.api.signUpEmail({
-        body: {
-            email,
-            password,
-            name,
-            // @ts-ignore - Ensure your auth config allows 'role' in additionalFields
-            role, 
-        },
+        body: { email, password, name },
         asResponse: true
     });
 
-    // 5. Intercept the Response
-    // We create a NEW JSON response for your Admin Browser that DOES NOT have the new user's cookie.
+    if (!res) return NextResponse.json({ error: "Failed" }, { status: 500 });
+
+    // 4. FORCE UPDATE ROLE VIA DATABASE
+    // Since we are inside the server, we have direct DB access.
+    // This bypasses Better Auth's API restrictions.
+    const newUser = await db.user.findUnique({ where: { email } });
     
-    if (!res) {
-        return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+    if (newUser) {
+        await db.user.update({
+            where: { id: newUser.id },
+            data: { role: role } // <--- Apply the high-privilege role here
+        });
     }
 
-    // Return a clean 200 OK
-    return NextResponse.json({ success: true, user: { email, name, role } });
+    return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    // Handle Better Auth errors (like Email already exists)
     return NextResponse.json({ 
         error: error.body?.message || error.message || "Something went wrong" 
     }, { status: 400 });
