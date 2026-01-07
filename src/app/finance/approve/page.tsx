@@ -3,7 +3,7 @@ import { protectPage } from "@/lib/protect";
 import { ExpenseApprovalList } from "@/components/finance/expense-approval";
 
 export default async function ApproveExpensePage() {
-  await protectPage(["admin"]);
+  await protectPage(["admin", "super_admin"]);
 
   // Fetch Pending Expenses
   const pendingExpenses = await db.expense.findMany({

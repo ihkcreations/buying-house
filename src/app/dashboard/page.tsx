@@ -16,11 +16,11 @@ export default async function DashboardPage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   // 1. AUTH & ROLES
-  const user = await protectPage(["admin", "merchandiser", "commercial", "finance"]);
+  const user = await protectPage(["super_admin", "admin", "merchandiser", "commercial", "finance"]);
   
   // PERMISSION LOGIC UPDATED:
   const showFinancials = ["super_admin", "admin"].includes(user.role); // <--- ONLY ADMIN SEES REVENUE/PROFIT
-  const canApproveExpenses = user.role === "admin"; // <--- FINANCE SEES ALERTS
+  const canApproveExpenses = ["super_admin", "admin"].includes(user.role); // <--- FINANCE SEES ALERTS
 
   // 2. DATE FILTER SETUP
   const sp = await searchParams;

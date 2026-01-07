@@ -3,7 +3,7 @@ import { protectPage } from "@/lib/protect";
 import { FinanceDashboard } from "@/components/finance/finance-dashboard";
 
 export default async function BusinessOverviewPage() {
-  await protectPage(["admin", "merchandiser", "commercial", "finance"]);
+  await protectPage(["admin", "super_admin"]);
 
   // 1. Fetch Completed Orders (Revenue) with Buyer Name
   const orders = await db.order.findMany({

@@ -11,8 +11,8 @@ export default async function ExpenseEntryPage({
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const user = await protectPage(["admin", "merchandiser", "commercial", "finance"]);
-  const isAdmin = user.role === "admin";
+  const user = await protectPage(["super_admin", "admin", "merchandiser", "commercial", "finance"]);
+  const isAdmin = ["super_admin", "admin"].includes(user.role);
 
   const sp = await searchParams;
   const q = (sp.q as string) || "";
