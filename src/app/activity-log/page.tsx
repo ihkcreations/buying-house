@@ -12,7 +12,7 @@ import { FilterToolbar } from "@/components/activity/filter-toolbar"; // Import 
 export default async function ActivityLogPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await protectPage(["admin", "merchandiser", "commercial", "finance"]);
 

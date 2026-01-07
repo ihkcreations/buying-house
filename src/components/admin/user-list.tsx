@@ -257,7 +257,7 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
                   <div className="space-y-2">
                       <Label>New Password</Label>
                       <Input 
-                        type="text" 
+                        type="password" 
                         value={newResetPass} 
                         onChange={(e) => setNewResetPass(e.target.value)} 
                         minLength={6} 

@@ -9,7 +9,7 @@ import { protectPage } from "@/lib/protect";
 export default async function OrderListPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await protectPage(["admin", "merchandiser"]);
 

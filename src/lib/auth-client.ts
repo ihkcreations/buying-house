@@ -3,7 +3,7 @@ import { adminClient } from "better-auth/client/plugins"
 import { ac, superAdminRole, adminRole } from "@/lib/access";
 
 export const authClient = createAuthClient({
-    baseURL: "http://localhost:3000", // Change this in production
+    baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000", // Change this in production
     plugins: [
         adminClient({
             ac,

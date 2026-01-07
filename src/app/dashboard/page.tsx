@@ -13,7 +13,7 @@ import { startOfYear, startOfMonth, subMonths } from "date-fns";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   // 1. AUTH & ROLES
   const user = await protectPage(["super_admin", "admin", "merchandiser", "commercial", "finance"]);

@@ -13,7 +13,7 @@ import { OrderFilters } from "@/components/orders/order-filters"; // <--- Import
 export default async function CommercialDashboard({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await protectPage(["admin", "commercial"]);
 

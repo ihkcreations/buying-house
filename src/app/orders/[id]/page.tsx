@@ -70,7 +70,7 @@ export default async function OrderDetailsPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   // Await params (Next.js 15 requirement)
   const { id } = await params;

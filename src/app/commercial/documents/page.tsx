@@ -11,7 +11,7 @@ import { OrderFilters } from "@/components/orders/order-filters"; // <--- Import
 export default async function DocumentMatrixPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await protectPage(["admin", "commercial"]);
 

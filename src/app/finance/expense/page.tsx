@@ -9,7 +9,7 @@ import { ExpenseFilter } from "@/components/finance/expense-filter";
 export default async function ExpenseEntryPage({
   searchParams
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const user = await protectPage(["super_admin", "admin", "merchandiser", "commercial", "finance"]);
   const isAdmin = ["super_admin", "admin"].includes(user.role);
