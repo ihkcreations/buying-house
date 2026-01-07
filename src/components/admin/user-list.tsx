@@ -136,7 +136,9 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
                 <Select value={role} onValueChange={setRole}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
+                         {currentUserRole === "super_admin" && (
+                              <SelectItem value="admin">Admin</SelectItem>
+                          )}
                         <SelectItem value="merchandiser">Merchandiser</SelectItem>
                         <SelectItem value="commercial">Commercial</SelectItem>
                         <SelectItem value="finance">Finance</SelectItem>

@@ -4,44 +4,55 @@ import { headers } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    // 1. Security Check: Ensure Requester is Admin
+    // 1. Security Check: Get Current User Session
     const session = await auth.api.getSession({
-        headers: await headers() // Pass current headers to check YOUR admin session
+        headers: await headers()
     });
 
     const currentUserRole = (session?.user as any)?.role;
+
+    // Must be at least an Admin to access this route
     if (currentUserRole !== "admin" && currentUserRole !== "super_admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 2. Parse Body
+    // 2. Parse Request Body
     const body = await req.json();
     const { email, password, name, role } = body;
 
-    // 3. Create User using Better Auth Server API
+    // 3. HIERARCHY CHECK (The New Logic)
+    // If trying to create a high-privilege account ('admin' or 'super_admin')
+    if (role === "admin" || role === "super_admin") {
+        // Only Super Admin can do this
+        if (currentUserRole !== "super_admin") {
+            return NextResponse.json({ 
+                error: "Permission Denied: Only Super Admin can create Admin accounts." 
+            }, { status: 403 });
+        }
+    }
+
+    // 4. Create User using Better Auth Server API
     // We pass 'asResponse: true' to get the full response object
-    // This creates the user in the DB
     const res = await auth.api.signUpEmail({
         body: {
             email,
             password,
             name,
-            role, // Ensure your auth.ts config allows 'role' in additionalFields
+            // @ts-ignore - Ensure your auth config allows 'role' in additionalFields
+            role, 
         },
         asResponse: true
     });
 
-    // 4. THE FIX: Intercept the Response
-    // The 'res' object contains the new user's session cookie.
-    // We create a NEW JSON response for your Admin Browser that DOES NOT have that cookie.
+    // 5. Intercept the Response
+    // We create a NEW JSON response for your Admin Browser that DOES NOT have the new user's cookie.
     
-    // We assume success if we got a response, but check for errors
     if (!res) {
         return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
     }
 
-    // Return a clean 200 OK without forwarding the Set-Cookie header from 'res'
-    return NextResponse.json({ success: true, user: body });
+    // Return a clean 200 OK
+    return NextResponse.json({ success: true, user: { email, name, role } });
 
   } catch (error: any) {
     // Handle Better Auth errors (like Email already exists)
