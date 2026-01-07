@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, FileText, ImageIcon, Printer } from "lucide-react";
 
 // Import your modules
 import { CostingForm } from "@/components/orders/costing-form";
@@ -169,6 +169,32 @@ export default async function OrderDetailsPage({
         {/* --- TAB CONTENT --- */}
 
         <TabsContent value="overview" className="space-y-6">
+          {/* TECH PACKS CARD */}
+            {order.techPackUrls && order.techPackUrls.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Tech Pack & Attachments</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-4">
+                            {order.techPackUrls.map((url, idx) => (
+                                <Link key={idx} href={url} target="_blank">
+                                    <div className="flex flex-col items-center gap-2 p-4 border rounded-lg hover:bg-slate-50 transition-colors w-32 text-center cursor-pointer">
+                                        <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center">
+                                            {url.endsWith('.pdf') ? <FileText className="w-6 h-6 text-red-500"/> : <ImageIcon className="w-6 h-6 text-blue-500"/>}
+                                        </div>
+                                        <span className="text-xs text-slate-600 font-medium truncate w-full">
+                                            Attachment {idx + 1}
+                                        </span>
+                                        <Badge variant="secondary" className="text-[10px]">View</Badge>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+            
           {/* The New Visual Dashboard */}
           <OrderOverview order={order} />
 

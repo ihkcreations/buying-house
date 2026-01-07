@@ -18,6 +18,7 @@ export async function createOrder(data: any) {
     unitPrice,
     totalValue,
     sizeColorMap, // This is the JSON Matrix
+    techPackUrls,
   } = data;
 
   // 2. Validate Uniqueness
@@ -41,6 +42,7 @@ export async function createOrder(data: any) {
         unitPrice: parseFloat(unitPrice),
         totalValue: parseFloat(totalValue),
         sizeColorMap,
+        techPackUrls: techPackUrls || [],
         status: "PENDING",
       },
     });

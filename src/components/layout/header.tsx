@@ -45,16 +45,6 @@ export function Header() {
                 </SheetContent>
             </Sheet>
         </div>
-        
-        {/* SEARCH BAR */}
-        <div className="flex items-center gap-2 rounded-md border bg-slate-50 px-3 py-2 w-full md:w-96">
-            <Search className="h-4 w-4 text-slate-500" />
-            <input 
-            type="text" 
-            placeholder="Search by Order #..." 
-            className="bg-transparent text-sm outline-none w-full placeholder:text-slate-400"
-            />
-        </div>
       </div>
 
       {/* RIGHT SIDE: PROFILE */}

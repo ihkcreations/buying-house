@@ -86,6 +86,8 @@ model Order {
   packingList     PackingList?
 
   expenses        Expense[]
+
+  techPackUrls  String[]  @default([])
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

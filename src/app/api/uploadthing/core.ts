@@ -22,6 +22,14 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ file }) => {
       console.log("Upload complete:", file.url);
     }),
+    techPackUploader: f({ 
+      image: { maxFileSize: "8MB", maxFileCount: 5 }, 
+      pdf: { maxFileSize: "16MB", maxFileCount: 5 },
+      blob: { maxFileSize: "32MB", maxFileCount: 5 } // For .ai, .xlsx
+  })
+    .onUploadComplete(async ({ file }) => {
+      console.log("Tech Pack Uploaded:", file.url);
+    }),
 } satisfies FileRouter;
  
 export type OurFileRouter = typeof ourFileRouter;
