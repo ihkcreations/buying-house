@@ -7,6 +7,7 @@ import { CheckCircle2, Clock, ArrowRight, SearchX } from "lucide-react";
 import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { OrderFilters } from "@/components/orders/order-filters"; // <--- Import Filters
+import { format } from "date-fns";
 
 export default async function DocumentMatrixPage({
   searchParams,
@@ -80,7 +81,8 @@ export default async function DocumentMatrixPage({
           <Table className="min-w-[1200px]">
             <TableHeader>
               <TableRow className="bg-slate-50 border-b border-slate-200">
-                <TableHead className="w-[120px] font-bold text-slate-700">Order</TableHead>
+                <TableHead className="w-[120px] font-bold text-slate-700">Order No</TableHead>
+                <TableHead className="w-[120px] font-bold text-slate-700">Booking Date</TableHead>
                 <TableHead className="w-[180px] font-bold text-slate-700">Buyer</TableHead>
                 
                 {/* MATRIX COLUMNS */}
@@ -118,6 +120,9 @@ export default async function DocumentMatrixPage({
                   return (
                     <TableRow key={order.id} className="hover:bg-slate-50 transition-colors">
                       <TableCell className="font-medium text-blue-700">{order.orderNo}</TableCell>
+                      <TableCell className="text-xs text-slate-500">
+                          {format(new Date(order.createdAt), "dd MMM yyyy hh:mm a")}
+                      </TableCell>
                       <TableCell>
                           <div className="font-medium truncate max-w-[150px]" title={order.buyer.name}>{order.buyer.name}</div>
                           <div className="text-[10px] text-slate-400">{order.styleNo}</div>

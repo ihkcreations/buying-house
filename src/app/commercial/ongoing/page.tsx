@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Handshake, Landmark, ArrowRight, CalendarClock, AlertCircle, SearchX } from "lucide-react";
+import { FileText, Handshake, Landmark, ArrowRight, CalendarClock, AlertCircle, SearchX, Calendar } from "lucide-react";
 import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { protectPage } from "@/lib/protect";
 import { format, differenceInDays } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { OrderFilters } from "@/components/orders/order-filters"; // <--- Import Filters
+
 
 export default async function CommercialDashboard({
   searchParams,
@@ -104,6 +105,7 @@ export default async function CommercialDashboard({
             <TableHeader>
               <TableRow className="bg-white">
                 <TableHead className="w-[150px]">Order No</TableHead>
+                <TableHead className="w-[150px]">Booking Date</TableHead>
                 <TableHead className="w-[200px]">Buyer / Style</TableHead>
                 <TableHead className="text-right">Value</TableHead>
                 <TableHead className="text-center w-[180px]">Shipment Deadline</TableHead>
@@ -135,6 +137,9 @@ export default async function CommercialDashboard({
                   return (
                     <TableRow key={order.id} className="group hover:bg-slate-50 transition-colors">
                       <TableCell className="font-medium text-blue-700">{order.orderNo}</TableCell>
+                      <TableCell className="text-xs text-slate-500">
+                          {format(new Date(order.createdAt), "dd MMM yyyy hh:mm a")}
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium text-slate-900 truncate max-w-[180px]" title={order.buyer.name}>{order.buyer.name}</div>
                         <div className="text-xs text-slate-500">{order.styleNo}</div>

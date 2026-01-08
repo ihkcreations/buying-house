@@ -14,7 +14,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, MoreHorizontal, Trash2, AlertTriangle } from "lucide-react";
+import { Eye, MoreHorizontal, Trash2, AlertTriangle, Calendar } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteOrder } from "@/app/actions/orders"; // <--- Import the action
+import { format } from "date-fns";
 
 // Helper to color-code statuses
 const getStatusBadge = (status: string) => {
@@ -90,6 +91,7 @@ export function OrderTable({ initialOrders }: { initialOrders: any[] }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Order No</TableHead>
+                <TableHead>Booking Date</TableHead>
                 <TableHead>Buyer</TableHead>
                 <TableHead>Style / Season</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
@@ -110,6 +112,12 @@ export function OrderTable({ initialOrders }: { initialOrders: any[] }) {
                   <TableRow key={order.id} className="hover:bg-slate-50/50 cursor-pointer group">
                     <TableCell className="font-medium">
                       <span className="text-blue-600 font-bold">{order.orderNo}</span>
+                    </TableCell>
+                    <TableCell>
+                        <div className="flex items-center gap-2 text-slate-500 text-xs">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(order.createdAt), "dd MMM yyyy hh:mm a")}
+                        </div>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{order.buyer.name}</div>

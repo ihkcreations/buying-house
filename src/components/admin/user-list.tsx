@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { format } from "date-fns";
 
 export function UserList({ initialUsers }: { initialUsers: any[] }) {
   const router = useRouter();
@@ -199,7 +200,7 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
                       <Badge variant="secondary" className="capitalize bg-slate-100 text-slate-700">{user.role.replace("_", " ")}</Badge>
                     </TableCell>
                     <TableCell className="text-slate-500 text-sm">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {format(new Date(user.createdAt), "dd MMM yyyy hh:mm a")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
