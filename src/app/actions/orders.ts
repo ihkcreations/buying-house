@@ -72,6 +72,12 @@ export async function deleteOrder(orderId: string) {
 
     const role = (session?.user as any)?.role;
 
+    //get order no
+    const orderNo = await db.order.findUnique({
+        where: { id: orderId },
+        select: { orderNo: true }
+    });
+
     // 2. Only ADMIN can delete Orders
     if (role !== "admin" && role !== "super_admin") {
         return { error: "Unauthorized. Only Admins can delete orders." };
@@ -82,7 +88,7 @@ export async function deleteOrder(orderId: string) {
       where: { id: orderId },
     });
     
-    await logActivity("DELETED_ORDER", `Deleted Order ID ${orderId}`);
+    await logActivity("DELETED_ORDER", `Deleted Order No ${orderNo}`, orderId);
 
     revalidatePath("/orders/ongoing");
     revalidatePath("/orders/all"); // Assuming you have this route
@@ -91,5 +97,25 @@ export async function deleteOrder(orderId: string) {
   } catch (error) {
     console.error("Delete Error:", error);
     return { error: "Failed to delete order." };
+  }
+}
+
+export async function updateOrderAttachments(orderId: string, fileUrls: string[]) {
+  try {
+    // 1. Update the Order
+    await db.order.update({
+      where: { id: orderId },
+      data: {
+        techPackUrls: fileUrls
+      }
+    });
+
+    // 2. Log It
+    await logActivity("UPDATED_ATTACHMENTS", `Updated Tech Pack/Files`, orderId);
+
+    revalidatePath(`/orders/${orderId}`);
+    return { success: "Attachments updated successfully" };
+  } catch (error) {
+    return { error: "Failed to update attachments" };
   }
 }

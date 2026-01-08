@@ -16,6 +16,7 @@ import { OCSForm } from "@/components/orders/ocs-form";
 import { DocManager } from "@/components/commercial/doc-manager"; // To view commercial status
 import { OrderOverview } from "@/components/orders/order-overview";
 import { QuantityMatrix } from "@/components/orders/quantity-matrix";
+import { TechPackManager } from "@/components/orders/tech-pack-manager";
 
 // --- HELPER: Status Badge ---
 const getStatusBadge = (status: string) => {
@@ -169,40 +170,17 @@ export default async function OrderDetailsPage({
         {/* --- TAB CONTENT --- */}
 
         <TabsContent value="overview" className="space-y-6">
-          {/* TECH PACKS CARD */}
-            {order.techPackUrls && order.techPackUrls.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Tech Pack & Attachments</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-4">
-                            {order.techPackUrls.map((url, idx) => (
-                                <Link key={idx} href={url} target="_blank">
-                                    <div className="flex flex-col items-center gap-2 p-4 border rounded-lg hover:bg-slate-50 transition-colors w-32 text-center cursor-pointer">
-                                        <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center">
-                                            {url.endsWith('.pdf') ? <FileText className="w-6 h-6 text-red-500"/> : <ImageIcon className="w-6 h-6 text-blue-500"/>}
-                                        </div>
-                                        <span className="text-xs text-slate-600 font-medium truncate w-full">
-                                            Attachment {idx + 1}
-                                        </span>
-                                        <Badge variant="secondary" className="text-[10px]">View</Badge>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
             
-          {/* The New Visual Dashboard */}
-          <OrderOverview order={order} />
+            {/* The Dashboard */}
+            <OrderOverview order={order} />
+            
+            {/* 1. TECH PACK MANAGER (NEW) */}
+            {/* Can be viewed/edited by Admin & Merchandiser */}
+            <TechPackManager orderId={order.id} initialUrls={order.techPackUrls} />
 
-          {/* 2. The Modern Matrix (Breakdown) */}
-          <QuantityMatrix
-            matrix={order.sizeColorMap as any[]}
-            totalQty={order.orderQty}
-          />
+            {/* 2. The Matrix View */}
+            <QuantityMatrix matrix={order.sizeColorMap as any[]} totalQty={order.orderQty} />
+
         </TabsContent>
 
         <TabsContent value="costing">
