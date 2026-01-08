@@ -66,6 +66,14 @@ export default async function DocumentMatrixPage({
       );
   };
 
+  // Helper for Mobile Badges
+  const MobileDocBadge = ({ status, label }: { status: "DONE" | "PENDING", label: string }) => (
+      <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium border ${status === "DONE" ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
+          {status === "DONE" ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+          {label}
+      </div>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -76,7 +84,7 @@ export default async function DocumentMatrixPage({
       {/* FILTERS */}
       <OrderFilters buyers={buyers} />
 
-      <Card className="border-none shadow-md overflow-hidden">
+      <Card className="hidden md:block border-none shadow-md overflow-hidden">
         <CardContent className="p-0">
 
           <div className="overflow-x-auto relative w-full">
@@ -153,6 +161,57 @@ export default async function DocumentMatrixPage({
           </div>
         </CardContent>
       </Card>
+    {/* MOBILE LIST VIEW (New Implementation) */}
+      <div className="md:hidden space-y-4">
+          {orders.length === 0 && <div className="text-center py-10 text-slate-500">No orders found.</div>}
+          
+          {orders.map((order) => {
+              const docs = order.commercialDocs || [];
+              const hasPI = !!order.proformaInvoice ? "DONE" : "PENDING";
+              const hasSC = !!order.salesContract ? "DONE" : "PENDING";
+              const hasPO = docs.some(d => d.name.includes("Purchase Order") || d.name.includes("P.O")) ? "DONE" : "PENDING";
+              const hasLC = docs.some(d => d.name.includes("L/C")) ? "DONE" : "PENDING";
+              const hasUD = docs.some(d => d.name.includes("UD") || d.name.includes("Utilization")) ? "DONE" : "PENDING";
+              const hasPL = docs.some(d => d.name.includes("Packing List")) ? "DONE" : "PENDING";
+              const hasCI = docs.some(d => d.name.includes("Commercial Invoice")) ? "DONE" : "PENDING";
+              const hasDummyBL = docs.some(d => d.name.toLowerCase().includes("dummy")) ? "DONE" : "PENDING";
+              const hasOrgBL = docs.some(d => (d.name.includes("Bill of Lading") || d.name.includes("B/L")) && !d.name.toLowerCase().includes("dummy")) ? "DONE" : "PENDING";
+              const hasGSP = docs.some(d => d.name.includes("GSP")) ? "DONE" : "PENDING";
+
+              return (
+                  <Card key={order.id} className="shadow-sm border border-slate-200">
+                      <CardContent className="p-4">
+                          
+                          {/* Header */}
+                          <div className="flex justify-between items-start mb-3">
+                              <div>
+                                  <span className="text-lg font-bold text-blue-700">#{order.orderNo}</span>
+                                  <div className="text-sm font-medium text-slate-900 mt-1">{order.buyer.name}</div>
+                              </div>
+                              <Link href={`/commercial/orders/${order.id}?tab=docs`}>
+                                  <Button size="sm" variant="outline" className="h-8 text-xs">Manage <ArrowRight className="w-3 h-3 ml-1"/></Button>
+                              </Link>
+                          </div>
+
+                          {/* Document Grid */}
+                          <div className="flex flex-wrap gap-2">
+                              <MobileDocBadge status={hasPI} label="PI" />
+                              <MobileDocBadge status={hasSC} label="Contract" />
+                              <MobileDocBadge status={hasLC} label="L/C" />
+                              <MobileDocBadge status={hasUD} label="UD" />
+                              <MobileDocBadge status={hasPL} label="Packing" />
+                              <MobileDocBadge status={hasCI} label="Invoice" />
+                              <MobileDocBadge status={hasDummyBL} label="Dummy B/L" />
+                              <MobileDocBadge status={hasOrgBL} label="Original B/L" />
+                              <MobileDocBadge status={hasGSP} label="GSP" />
+                          </div>
+
+                      </CardContent>
+                  </Card>
+              );
+          })}
+      </div>
+
     </div>
   );
 }
