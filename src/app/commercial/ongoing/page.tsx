@@ -99,7 +99,7 @@ export default async function CommercialDashboard({
       {/* FILTERS */}
       <OrderFilters buyers={buyers} />
 
-      <Card className="border-none shadow-md">
+      <Card className="hidden md:block border-none shadow-md">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -190,6 +190,66 @@ export default async function CommercialDashboard({
           </Table>
         </CardContent>
       </Card>
+
+      {/* MOBILE CARDS VIEW */}
+      <div className="md:hidden space-y-4">
+          {orders.map((order) => {
+              const hasPI = !!order.proformaInvoice;
+              const hasSC = !!order.salesContract;
+              const hasLC = order.commercialDocs.some(d => d.name.includes("L/C"));
+              const shipDate = order.timeAction?.shipmentPlan ? new Date(order.timeAction.shipmentPlan) : null;
+              
+              return (
+                  <Card key={order.id} className="shadow-sm border border-slate-200">
+                      <CardContent className="p-4">
+                          
+                          {/* Header: Order & Buyer */}
+                          <div className="flex justify-between items-start mb-3">
+                              <div>
+                                  <span className="text-lg font-bold text-blue-700">#{order.orderNo}</span>
+                                  <div className="text-sm font-medium text-slate-900 mt-1">{order.buyer.name}</div>
+                                  <div className="text-xs text-slate-400">{order.styleNo}</div>
+                              </div>
+                              <div className="text-right">
+                                  <span className="text-sm font-bold text-slate-700 block">${order.totalValue.toLocaleString()}</span>
+                                  {order.status === "OCS_FINALIZED" ? <Badge variant="outline" className="bg-slate-900 text-white">Closed</Badge> : 
+                                  order.status === "SHIPPED" ? <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Shipped</Badge> : 
+                                  hasLC ? <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">L/C Active</Badge> : 
+                                  <Badge variant="outline" className="text-slate-500">Processing</Badge>}
+                              </div>
+                          </div>
+
+                          {/* Status Icons Row */}
+                          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-md mb-4">
+                              <div className="flex gap-3">
+                                  <StatusIcon status={hasPI} label="PI" />
+                                  <StatusIcon status={hasSC} label="SC" />
+                                  <StatusIcon status={hasLC} label="L/C" />
+                              </div>
+                              
+                              {/* Shipment Date */}
+                              {shipDate && (
+                                  <div className="text-right">
+                                      <div className="flex items-center gap-1 text-xs text-slate-500 justify-end">
+                                          <CalendarClock className="w-3 h-3"/> Ship Date
+                                      </div>
+                                      <span className="text-sm font-bold text-slate-700">{format(shipDate, "dd MMM yy")}</span>
+                                  </div>
+                              )}
+                          </div>
+
+                          {/* Action Button */}
+                          <Link href={`/commercial/orders/${order.id}`}>
+                              <Button className="w-full bg-slate-900 h-9 text-xs">
+                                  Manage Documents <ArrowRight className="w-3 h-3 ml-2"/>
+                              </Button>
+                          </Link>
+
+                      </CardContent>
+                  </Card>
+              );
+          })}
+      </div>
     </div>
   );
 }
