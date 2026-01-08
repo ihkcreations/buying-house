@@ -184,11 +184,11 @@ export function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
                             return (
                                 <Link key={subIndex} href={subItem.href} onClick={onLinkClick}>
                                     <Button
-                                        variant="ghost"
+                                        variant={variant === "primary" ? "default" : "ghost"}
                                         className={cn(
                                             "w-full justify-start gap-2 h-9 font-normal text-slate-600",
                                             pathname === subItem.href && "bg-blue-50 text-blue-700 font-medium",
-                                            variant === "primary" && "bg-blue-600 hover:bg-blue-700 text-white mb-2 shadow-sm font-medium"
+                                            variant === "primary" && "bg-blue-600 hover:bg-blue-800 text-white mb-2 shadow-sm font-medium"
                                         )}
                                     >
                                     <subItem.icon className="h-4 w-4" /> {subItem.title}
