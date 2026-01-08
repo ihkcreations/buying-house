@@ -70,25 +70,24 @@ export default async function ExpenseEntryPage({
 
   expenses.forEach(e => {
       const m = new Date(e.date).getMonth();
-      let rate = e.exchangeRate;
-      if (e.currency === "USD" && rate <= 1) {
-          rate = 120; // Force default for old data
-      }
+      const exchangeRate = e.exchangeRate > 1 ? e.exchangeRate : 120; // Assume 120 if data missing
 
-      // Calculate Value in BDT
+      // 1. Calculate BDT Value
       let valInBDT = 0;
       if (e.currency === "BDT") {
-          valInBDT = e.amount;
+          valInBDT = e.amount; // Already BDT
       } else {
-          valInBDT = e.amount * rate; // Convert USD to BDT
+          valInBDT = e.amount * exchangeRate; // USD * 120
       }
 
-      // Calculate Value in USD
+      // 2. Calculate USD Value
       let valInUSD = 0;
       if (e.currency === "USD") {
-          valInUSD = e.amount;
+          valInUSD = e.amount; // Already USD
       } else {
-          valInUSD = e.amount / rate; // Convert BDT to USD
+          // It's BDT, we need to divide by the market rate (120)
+          // We can't divide by e.exchangeRate because for BDT expenses, that is 1.
+          valInUSD = e.amount / 120; // Hardcode approx rate or fetch global rate
       }
 
       // Add to totals
