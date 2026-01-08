@@ -154,166 +154,161 @@ export default async function DashboardPage({
   const recentActivity = orders.slice(0, 5);
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+    <div className="space-y-6 pb-20 p-2 md:p-0"> {/* Added mobile padding */}
+      
+      {/* 1. HEADER (Stacks on mobile) */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
             {showFinancials ? "Executive Dashboard" : "Operations Dashboard"}
         </h2>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 md:gap-4">
             <DashboardFilter />
-            {/* Create Order: Only Admin & Merch */}
-            {["admin", "merchandiser"].includes(user.role) && (
-                <Link href="/orders/new">
-                    <Button className="bg-slate-900 hover:bg-slate-800">Create New Order</Button>
+            {/* Hide Create button for Finance users */}
+            {user.role !== "finance" && (
+                <Link href="/orders/new" className="w-full md:w-auto">
+                    <Button className="bg-slate-900 hover:bg-slate-800 w-full md:w-auto">Create Order</Button>
                 </Link>
             )}
         </div>
       </div>
 
+      {/* ALERTS (1 per row on mobile for readability) */}
       <ActionAlerts alerts={alerts} />
 
-      {/* --- KPI CARDS --- */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* 2. KPI CARDS (2x2 on Mobile) */}
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         
-        {/* 1. REVENUE vs VOLUME */}
+        {/* REVENUE */}
         {showFinancials ? (
-            <Card className="border-l-4 border-l-blue-600 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Total Revenue</CardTitle>
-                    <DollarSign className="h-4 w-4 text-blue-600" />
+            <Card className="border-l-4 border-l-blue-600 shadow-sm p-3 md:p-6">
+                <CardHeader className="p-0 pb-2 space-y-0">
+                    <CardTitle className="text-xs md:text-sm font-medium text-slate-500">Revenue</CardTitle>
+                    <DollarSign className="h-4 w-4 text-blue-600 hidden md:block" /> {/* Hide icon on tiny screens if needed */}
                 </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
-                    <p className="text-xs text-slate-500 mt-1 capitalize">{range.replace("_", " ")}</p>
+                <CardContent className="p-0">
+                    <div className="text-lg md:text-2xl font-bold truncate">${totalRevenue.toLocaleString()}</div>
+                    <p className="text-[10px] md:text-xs text-slate-500 mt-1 capitalize">{range.replace("_", " ")}</p>
                 </CardContent>
             </Card>
         ) : (
-            <Card className="border-l-4 border-l-blue-600 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Total Volume</CardTitle>
-                    <Box className="h-4 w-4 text-blue-600" />
+            <Card className="border-l-4 border-l-blue-600 shadow-sm p-3 md:p-6">
+                <CardHeader className="p-0 pb-2 space-y-0">
+                    <CardTitle className="text-xs md:text-sm font-medium text-slate-500">Volume</CardTitle>
+                    <Box className="h-4 w-4 text-blue-600 hidden md:block" />
                 </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalQty.toLocaleString()} pcs</div>
-                    <p className="text-xs text-slate-500 mt-1 capitalize">{range.replace("_", " ")}</p>
+                <CardContent className="p-0">
+                    <div className="text-lg md:text-2xl font-bold truncate">{totalQty.toLocaleString()}</div>
+                    <p className="text-[10px] md:text-xs text-slate-500 mt-1">Pcs Total</p>
                 </CardContent>
             </Card>
         )}
 
-        {/* 2. PROFIT vs COMPLETED */}
+        {/* PROFIT */}
         {showFinancials ? (
-            <Card className={`border-l-4 shadow-sm ${trueNetProfit >= 0 ? "border-l-green-500" : "border-l-red-500"}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Net Profit</CardTitle>
-                    <TrendingUp className={`h-4 w-4 ${trueNetProfit >= 0 ? "text-green-600" : "text-red-600"}`} />
+            <Card className={`border-l-4 shadow-sm p-3 md:p-6 ${trueNetProfit >= 0 ? "border-l-green-500" : "border-l-red-500"}`}>
+                <CardHeader className="p-0 pb-2 space-y-0">
+                    <CardTitle className="text-xs md:text-sm font-medium text-slate-500">Net Profit</CardTitle>
+                    <TrendingUp className={`h-4 w-4 hidden md:block ${trueNetProfit >= 0 ? "text-green-600" : "text-red-600"}`} />
                 </CardHeader>
-                <CardContent>
-                    <div className={`text-2xl font-bold ${trueNetProfit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                <CardContent className="p-0">
+                    <div className={`text-lg md:text-2xl font-bold truncate ${trueNetProfit >= 0 ? "text-green-700" : "text-red-600"}`}>
                         ${trueNetProfit.toLocaleString()}
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">Realized (After Expenses)</p>
+                    <p className="text-[10px] md:text-xs text-slate-500 mt-1">Realized</p>
                 </CardContent>
             </Card>
         ) : (
-            <Card className="border-l-4 border-l-green-500 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-500">Completed Orders</CardTitle>
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <Card className="border-l-4 border-l-green-500 shadow-sm p-3 md:p-6">
+                <CardHeader className="p-0 pb-2 space-y-0">
+                    <CardTitle className="text-xs md:text-sm font-medium text-slate-500">Completed</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-green-600 hidden md:block" />
                 </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{completedOrdersCount}</div>
-                    <p className="text-xs text-slate-500 mt-1">Shipped Successfully</p>
+                <CardContent className="p-0">
+                    <div className="text-lg md:text-2xl font-bold truncate">{completedOrdersCount}</div>
+                    <p className="text-[10px] md:text-xs text-slate-500 mt-1">Orders</p>
                 </CardContent>
             </Card>
         )}
 
-        {/* 3. ACTIVE (Everyone sees this) */}
-        <Card className="border-l-4 border-l-orange-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Active Orders</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-orange-600" />
+        {/* ACTIVE */}
+        <Card className="border-l-4 border-l-orange-500 shadow-sm p-3 md:p-6">
+          <CardHeader className="p-0 pb-2 space-y-0">
+            <CardTitle className="text-xs md:text-sm font-medium text-slate-500">Active</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-orange-600 hidden md:block" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeOrdersCount}</div>
-            <p className="text-xs text-slate-500 mt-1">In Pipeline</p>
+          <CardContent className="p-0">
+            <div className="text-lg md:text-2xl font-bold truncate">{activeOrdersCount}</div>
+            <p className="text-[10px] md:text-xs text-slate-500 mt-1">In Pipeline</p>
           </CardContent>
         </Card>
 
-        {/* 4. CLIENTS (Everyone sees this) */}
-        <Card className="border-l-4 border-l-purple-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Clients</CardTitle>
-            <Users className="h-4 w-4 text-purple-600" />
+        {/* CLIENTS */}
+        <Card className="border-l-4 border-l-purple-500 shadow-sm p-3 md:p-6">
+          <CardHeader className="p-0 pb-2 space-y-0">
+            <CardTitle className="text-xs md:text-sm font-medium text-slate-500">Clients</CardTitle>
+            <Users className="h-4 w-4 text-purple-600 hidden md:block" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{buyersCount}</div>
-            <p className="text-xs text-slate-500 mt-1">Active Buyers</p>
+          <CardContent className="p-0">
+            <div className="text-lg md:text-2xl font-bold truncate">{buyersCount}</div>
+            <p className="text-[10px] md:text-xs text-slate-500 mt-1">Active</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* --- CHARTS --- */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4">
+      {/* --- CHARTS (Stack vertically on mobile) --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4 md:gap-6">
+        <div className="lg:col-span-4 min-w-0"> {/* min-w-0 prevents chart overflow */}
             {showFinancials ? (
                 <OverviewCharts data={monthlyData} />
             ) : (
-                <div className="h-full bg-slate-50 border rounded-lg flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                <div className="h-[300px] bg-slate-50 border rounded-lg flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                     <TrendingUp className="w-12 h-12 mb-3 opacity-20" />
                     <p className="font-medium">Financial Data Restricted</p>
                 </div>
             )}
         </div>
-        <div className="col-span-3">
+        <div className="lg:col-span-3 min-w-0">
             <StatusDistribution data={Object.keys(orders.reduce((acc:any, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {})).map(key => ({ name: key.replace("_", " "), value: orders.filter(o => o.status === key).length }))} />
         </div>
       </div>
 
       {/* RECENT ACTIVITY */}
       <Card className="col-span-4">
-        <CardHeader>
+        <CardHeader className="px-4 md:px-6">
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 md:px-6">
           <div className="space-y-4">
             {recentActivity.length === 0 ? (
                 <p className="text-sm text-slate-500">No activity recorded yet.</p>
             ) : (
                 recentActivity.map(order => (
-                    <div key={order.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+                    <div key={order.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 shrink-0">
                                 <ShoppingBag className="h-4 w-4" />
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium leading-none">
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium leading-none truncate">
                                     Order <span className="font-bold text-slate-900">{order.orderNo}</span> Updated
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-500 mt-1 truncate">
                                     {order.buyer.name} • <span className="uppercase text-[10px] bg-slate-200 px-1 rounded">{order.status.replace("_", " ")}</span>
                                 </p>
                             </div>
                         </div>
-                        {/* Only show Order Value to Admin/Finance */}
-                        {showFinancials && (
-                            <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto pl-11 md:pl-0">
+                            {showFinancials && (
                                 <div className="text-sm font-bold text-slate-900">
                                     ${order.totalValue.toLocaleString()}
                                 </div>
-                                <Link href={`/orders/${order.id}`}>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <ArrowRight className="h-4 w-4 text-slate-400" />
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
-                        {!showFinancials && (
-                             <Link href={`/orders/${order.id}`}>
+                            )}
+                            <Link href={`/orders/${order.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <ArrowRight className="h-4 w-4 text-slate-400" />
                                 </Button>
                             </Link>
-                        )}
+                        </div>
                     </div>
                 ))
             )}

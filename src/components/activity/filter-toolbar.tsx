@@ -66,66 +66,46 @@ export function FilterToolbar() {
   return (
     <div className="flex flex-col gap-4 mb-6 p-4 bg-slate-50 border rounded-lg">
       
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* 1. SEARCH BAR */}
-        <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-            <Input
-            placeholder="Search user, order no, or details..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="pl-9 bg-white"
-            />
-        </div>
+      {/* 1. SEARCH BAR (Full Width) */}
+      <div className="relative w-full">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+        <Input
+          placeholder="Search user, order no, or details..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="pl-9 bg-white"
+        />
+      </div>
 
-        {/* 2. DATE RANGE PICKER */}
-        <div className="w-full md:w-[300px]">
+      {/* 2. FILTERS (Grid Layout for Mobile) */}
+      <div className="grid grid-cols-2 md:flex md:flex-row gap-3 w-full">
+        
+        {/* Date Picker (Full width on mobile grid if wanted, or half) */}
+        <div className="col-span-2 md:col-span-1 md:w-[240px]">
             <Popover>
             <PopoverTrigger asChild>
                 <Button
                 id="date"
                 variant={"outline"}
-                className={cn(
-                    "w-full justify-start text-left font-normal bg-white",
-                    !date && "text-muted-foreground"
-                )}
+                className={cn("w-full justify-start text-left font-normal bg-white", !date && "text-muted-foreground")}
                 >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {date?.from ? (
-                    date.to ? (
-                    <>
-                        {format(date.from, "LLL dd, y")} -{" "}
-                        {format(date.to, "LLL dd, y")}
-                    </>
-                    ) : (
-                    format(date.from, "LLL dd, y")
-                    )
+                    date.to ? <span className="truncate">{format(date.from, "MMM dd")} - {format(date.to, "MMM dd")}</span> : format(date.from, "MMM dd, y")
                 ) : (
-                    <span>Pick a date range</span>
+                    <span>Date Range</span>
                 )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-                />
+            <PopoverContent className="w-auto p-0" align="start">
+                <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={1} />
             </PopoverContent>
             </Popover>
         </div>
-      </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* 3. ROLE FILTER */}
-        <div className="w-full md:w-[200px]">
-            <Select value={role} onValueChange={setRole}>
-            <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Role" />
-            </SelectTrigger>
+        {/* Role Filter */}
+        <Select value={role} onValueChange={setRole}>
+            <SelectTrigger className="bg-white w-full"><SelectValue placeholder="Role" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
@@ -133,33 +113,25 @@ export function FilterToolbar() {
                 <SelectItem value="commercial">Commercial</SelectItem>
                 <SelectItem value="finance">Finance</SelectItem>
             </SelectContent>
-            </Select>
-        </div>
+        </Select>
 
-        {/* 4. ACTION FILTER */}
-        <div className="w-full md:w-[200px]">
-            <Select value={action} onValueChange={setAction}>
-            <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Action Type" />
-            </SelectTrigger>
+        {/* Action Filter */}
+        <Select value={action} onValueChange={setAction}>
+            <SelectTrigger className="bg-white w-full"><SelectValue placeholder="Action" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Actions</SelectItem>
                 <SelectItem value="ORDER">Orders</SelectItem>
                 <SelectItem value="COSTING">Costing</SelectItem>
-                <SelectItem value="PI">Proforma Invoice</SelectItem>
-                <SelectItem value="SC">Sales Contract</SelectItem>
+                <SelectItem value="PI">Proforma</SelectItem>
                 <SelectItem value="DOC">Documents</SelectItem>
                 <SelectItem value="PRODUCTION">Production</SelectItem>
-                <SelectItem value="FABRIC">Fabric</SelectItem>
-                <SelectItem value="TNA">T&A Plan</SelectItem>
             </SelectContent>
-            </Select>
-        </div>
+        </Select>
 
-        {/* 5. RESET BUTTON */}
+        {/* Reset Button (Only shows if filters active) */}
         {(query || role !== "all" || action !== "all" || date?.from) && (
-            <Button variant="ghost" onClick={clearFilters} className="text-slate-500">
-            <X className="mr-2 h-4 w-4" /> Reset Filters
+            <Button variant="ghost" onClick={clearFilters} className="col-span-2 md:col-span-1 text-slate-500 w-full md:w-auto">
+                <X className="mr-2 h-4 w-4" /> Reset
             </Button>
         )}
       </div>

@@ -24,77 +24,62 @@ export function OverviewCharts({ data }: { data: any[] }) {
 
   return (
     <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
         <div>
-            <CardTitle>Financial Overview</CardTitle>
-            <CardDescription>Monthly Revenue & Profit Performance</CardDescription>
+            <CardTitle className="text-base sm:text-lg">Financial Overview</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Monthly Revenue & Profit Performance</CardDescription>
         </div>
         
-        {/* TAB SWITCHER */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[300px]">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="revenue">Revenue</TabsTrigger>
-                <TabsTrigger value="profit">Profit</TabsTrigger>
-                <TabsTrigger value="both">Both</TabsTrigger>
+        {/* TAB SWITCHER (Full width on mobile) */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-[300px]">
+            <TabsList className="grid w-full grid-cols-3 h-9">
+                <TabsTrigger value="revenue" className="text-xs">Revenue</TabsTrigger>
+                <TabsTrigger value="profit" className="text-xs">Profit</TabsTrigger>
+                <TabsTrigger value="both" className="text-xs">Both</TabsTrigger>
             </TabsList>
         </Tabs>
       </CardHeader>
       
       <CardContent className="pl-0">
-        <div className="h-[350px] w-full">
+        <div className="h-[250px] sm:h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <Gradients />
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               
               <XAxis 
                 dataKey="name" 
                 stroke="#64748b" 
-                fontSize={12} 
+                fontSize={10} 
                 tickLine={false} 
                 axisLine={false} 
+                tickFormatter={(value) => value.slice(0, 3)} // Ensure short names on mobile
               />
               
               <YAxis 
                 stroke="#64748b" 
-                fontSize={12} 
+                fontSize={10} 
                 tickLine={false} 
                 axisLine={false} 
                 tickFormatter={(value) => `$${value/1000}k`} 
+                width={40} // Reduced width for mobile
               />
               
               <Tooltip 
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }}
                 formatter={(value: number | undefined) => {
-                  if (value === undefined) return '';
-                  return `$${value.toLocaleString()}`;
+                    if (value === undefined) return '';
+                    return `৳${value.toLocaleString()}`;
                 }}
               />
 
-              {/* REVENUE LINE */}
+              {/* LINES (Same as before) */}
               {(activeTab === "revenue" || activeTab === "both") && (
-                  <Area 
-                    type="monotone" // This makes it curved
-                    dataKey="revenue" 
-                    stroke="#2563eb" // Blue
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)" 
-                    name="Revenue"
-                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
               )}
 
-              {/* PROFIT LINE */}
               {(activeTab === "profit" || activeTab === "both") && (
-                  <Area 
-                    type="monotone" // This makes it curved
-                    dataKey="profit" 
-                    stroke="#16a34a" // Green
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorProfit)" 
-                    name="Profit"
-                  />
+                  <Area type="monotone" dataKey="profit" stroke="#16a34a" strokeWidth={2} fillOpacity={1} fill="url(#colorProfit)" />
               )}
 
             </AreaChart>

@@ -103,47 +103,64 @@ export default async function ActivityLogPage({
                         </div>
                     ) : (
                         logs.map((log) => (
-                            <div key={log.id} className="flex items-start gap-4 border-b pb-4 last:border-0 hover:bg-slate-50/50 p-2 rounded transition-colors">
-                                <Avatar className="h-9 w-9 mt-1 border border-slate-200">
-                                    <AvatarFallback className="bg-white text-slate-700 font-bold text-xs">
+                        <div key={log.id} className="flex flex-col sm:flex-row sm:items-start gap-3 border-b pb-4 last:border-0 hover:bg-slate-50/50 p-3 rounded transition-colors">
+                            
+                            {/* Header Row on Mobile (Avatar + Name + Time) */}
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <Avatar className="h-8 w-8 border border-slate-200 shrink-0">
+                                    <AvatarFallback className="bg-white text-slate-700 font-bold text-[10px]">
                                         {log.userName.substring(0,2).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1 space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium text-slate-900">
-                                            {log.userName} 
-                                            <Badge variant="outline" className="ml-2 text-[10px] uppercase bg-slate-100 text-slate-600 border-none">
-                                                {log.userRole}
-                                            </Badge>
-                                        </p>
-                                        <span className="text-xs text-slate-400 whitespace-nowrap ml-2">
-                                            {formatDistanceToNow(log.createdAt, { addSuffix: true })}
-                                        </span>
+                                <div className="flex flex-col sm:hidden">
+                                    <p className="text-sm font-medium text-slate-900 leading-none">{log.userName}</p>
+                                    <span className="text-[10px] text-slate-400 mt-1">
+                                        {formatDistanceToNow(log.createdAt, { addSuffix: true })}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Content Column */}
+                            <div className="flex-1 min-w-0">
+                                {/* Desktop Header */}
+                                <div className="hidden sm:flex items-center justify-between mb-1">
+                                    <p className="text-sm font-medium text-slate-900">
+                                        {log.userName} 
+                                        <Badge variant="outline" className="ml-2 text-[10px] uppercase bg-slate-50 text-slate-500 border-slate-200">
+                                            {log.userRole}
+                                        </Badge>
+                                    </p>
+                                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                                        {formatDistanceToNow(log.createdAt, { addSuffix: true })}
+                                    </span>
+                                </div>
+                                
+                                {/* Details */}
+                                <div className="flex items-start gap-2">
+                                    <div className="p-1 rounded-full bg-white border shadow-sm shrink-0 mt-0.5">
+                                        {getIcon(log.action)}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-full bg-white border shadow-sm">
-                                            {getIcon(log.action)}
-                                        </div>
-                                        <p className="text-sm text-slate-700">
-                                            {log.details} 
-                                            {/* --- ADD COUNT HERE --- */}
-                                            {log.documentCount && log.action.includes("GENERATED") && (
-                                                <span className="text-xs text-slate-500 ml-2"> (Count: {log.documentCount})</span>
-                                            )}
-                                            {/* ---------------------- */}
-                                        </p>
-                                    </div>
-                                    {log.order && (
+                                    <p className="text-sm text-slate-700 break-words leading-snug">
+                                        {log.details}
+                                        {log.documentCount && log.action.includes("GENERATED") && (
+                                            <span className="text-xs text-slate-500 ml-1">(v{log.documentCount})</span>
+                                        )}
+                                    </p>
+                                </div>
+
+                                {/* Order Tag */}
+                                {log.order && (
+                                    <div className="mt-2 pl-7">
                                         <Link href={`/orders/${log.orderId}`}>
-                                            <Badge variant="secondary" className="mt-2 cursor-pointer hover:bg-blue-100 text-blue-700 bg-blue-50 border-blue-100">
+                                            <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100 text-blue-700 bg-blue-50 border-blue-100 text-[10px] font-normal">
                                                 Order #{log.order.orderNo}
                                             </Badge>
                                         </Link>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
-                        ))
+                        </div>
+                     ))
                     )}
                 </div>
             </ScrollArea>
