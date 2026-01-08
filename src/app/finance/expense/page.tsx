@@ -5,6 +5,7 @@ import { ExpenseList } from "@/components/finance/expense-list"; // We build thi
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpenseChart } from "@/components/finance/expense-chart";
 import { ExpenseFilter } from "@/components/finance/expense-filter";
+import { getExchangeRate } from "@/lib/currency";
 
 export default async function ExpenseEntryPage({
   searchParams
@@ -60,19 +61,44 @@ export default async function ExpenseEntryPage({
     take: 50 // Limit to active ones
   });
 
-  // Process Data for Chart (Group by Month - only BDT for simplicity in chart)
+  // --- CHART DATA PROCESSING (Dual Currency) ---
   const monthlyData = new Array(12).fill(0).map((_, i) => ({
     name: new Date(0, i).toLocaleString('en-US', { month: 'short' }),
-    total: 0
+    totalBDT: 0, // Consolidated Value in BDT
+    totalUSD: 0  // Consolidated Value in USD
   }));
 
   expenses.forEach(e => {
-      // Convert USD to BDT approx for chart view if needed, or filter only BDT
+      const m = new Date(e.date).getMonth();
+      let rate = e.exchangeRate;
+      if (e.currency === "USD" && rate <= 1) {
+          rate = 120; // Force default for old data
+      }
+
+      // Calculate Value in BDT
+      let valInBDT = 0;
       if (e.currency === "BDT") {
-          const month = new Date(e.date).getMonth();
-          monthlyData[month].total += e.amount;
+          valInBDT = e.amount;
+      } else {
+          valInBDT = e.amount * rate; // Convert USD to BDT
+      }
+
+      // Calculate Value in USD
+      let valInUSD = 0;
+      if (e.currency === "USD") {
+          valInUSD = e.amount;
+      } else {
+          valInUSD = e.amount / rate; // Convert BDT to USD
+      }
+
+      // Add to totals
+      if (monthlyData[m]) {
+          monthlyData[m].totalBDT += Math.round(valInBDT);
+          monthlyData[m].totalUSD += valInUSD;
       }
   });
+  const rate = await getExchangeRate();
+
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -88,7 +114,7 @@ export default async function ExpenseEntryPage({
         </TabsList>
 
         <TabsContent value="new">
-            <ExpenseForm orders={orders} />
+            <ExpenseForm orders={orders} currentRate={rate} />
         </TabsContent>
 
         <TabsContent value="history">

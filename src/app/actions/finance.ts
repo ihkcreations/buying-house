@@ -16,7 +16,7 @@ export async function createExpense(formData: FormData) {
     const currentRate = await getExchangeRate();
 
     // If currency is USD, rate is 1. If BDT, use the fetched rate.
-    const rateToStore = currency === "USD" ? 1 : currentRate;
+    const rateToStore = currency === "USD" ? currentRate : 1;
 
     const amount = parseFloat(formData.get("amount") as string);
     const category = formData.get("category") as string;

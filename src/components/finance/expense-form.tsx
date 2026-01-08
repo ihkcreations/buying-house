@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getExchangeRate } from "@/lib/currency"; 
 
-export function ExpenseForm({ orders }: { orders: any[] }) {
+export function ExpenseForm({ orders, currentRate }: { orders: any[], currentRate: number }) {
   const [isLoading, setIsLoading] = useState(false);
   const [currency, setCurrency] = useState("BDT");
 
@@ -34,13 +35,21 @@ export function ExpenseForm({ orders }: { orders: any[] }) {
         <form action={handleSubmit} className="space-y-4">
 
             {/* Currency Switcher */}
-            <div className="flex justify-center mb-4">
+            <div className="flex flex-col items-center mb-4 gap-2">
                 <Tabs value={currency} onValueChange={setCurrency} className="w-[200px]">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="BDT">৳ BDT</TabsTrigger>
                         <TabsTrigger value="USD">$ USD</TabsTrigger>
                     </TabsList>
                 </Tabs>
+                {currency === "USD" && (
+                    <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded">
+                        <div className="flex flex-col items-center">
+                            <div>Today's Conversion Rate</div>
+                            <div>$1 = {currentRate}৳</div>
+                        </div>
+                    </span>
+                )}
             </div>
             
             {/* Amount & Date - Stacked on Mobile */}
