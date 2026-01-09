@@ -212,7 +212,7 @@ export default async function DashboardPage({
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className={`text-lg md:text-2xl font-bold truncate ${trueNetProfit >= 0 ? "text-green-700" : "text-red-600"}`}>
-                        ${trueNetProfit.toLocaleString()}
+                        ${trueNetProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </div>
                     <p className="text-[10px] md:text-xs text-slate-500 mt-1">Realized</p>
                 </CardContent>

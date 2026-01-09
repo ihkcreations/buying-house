@@ -143,7 +143,7 @@ export function OrderTable({ initialOrders }: { initialOrders: any[] }) {
                                  <Trash2 className="w-4 h-4"/>
                              </Button>
                              <Link href={`/orders/${order.id}`}>
-                                 <Button size="sm" className="bg-slate-900 text-xs h-8">View</Button>
+                                 <Button size="sm" className="bg-blue-600 text-xs h-8">View</Button>
                              </Link>
                           </div>
                       </div>

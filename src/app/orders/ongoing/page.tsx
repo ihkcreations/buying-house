@@ -72,13 +72,13 @@ export default async function OrderListPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="md:flex md:items-center justify-between">
+        <div className="mb-4 md:mb-0">
           <h1 className="text-3xl font-bold tracking-tight">Order Management</h1>
           <p className="text-slate-500">View and manage all purchase orders.</p>
         </div>
         <Link href="/orders/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" /> Create New Order
           </Button>
         </Link>
