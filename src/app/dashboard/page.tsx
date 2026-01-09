@@ -164,7 +164,7 @@ export default async function DashboardPage({
         <div className="flex flex-wrap items-center gap-2 md:gap-4">
             <DashboardFilter />
             {/* Hide Create button for Finance users */}
-            {user.role !== "finance" && (
+            {user.role !== "finance" || user.role!=="commercial" && (
                 <Link href="/orders/new" className="w-full md:w-auto">
                     <Button className="bg-slate-900 hover:bg-slate-800 w-full md:w-auto">Create Order</Button>
                 </Link>
