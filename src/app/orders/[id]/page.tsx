@@ -159,7 +159,7 @@ export default async function OrderDetailsPage({
           </TabsTrigger>
 
           <TabsTrigger value="production" asChild className={tabTriggerClass}>
-            <Link href={`/orders/${id}?tab=production`}>Production</Link>
+            <Link href={`/orders/${id}?tab=production`}>Productions</Link>
           </TabsTrigger>
 
           <TabsTrigger value="ocs" asChild className={tabTriggerClass}>

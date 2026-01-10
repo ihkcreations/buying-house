@@ -229,7 +229,7 @@ export function FabricBooking({
                                       </TableCell>
                                       <TableCell>
                                           <div className="flex gap-2">
-                                              <Badge variant="outline">{item.gsm} GSM</Badge>
+                                              <Badge variant="outline">{item.yarnCount}, {item.gsm} GSM</Badge>
                                               <Badge variant="outline">{item.dia}</Badge>
                                           </div>
                                       </TableCell>
@@ -269,7 +269,7 @@ export function FabricBooking({
                                       </TableCell>
                                       <TableCell>
                                           <div className="flex gap-2">
-                                              <Badge variant="outline">{item.gsm} GSM</Badge>
+                                              <Badge variant="outline">{item.yarnCount}, {item.gsm} GSM</Badge>
                                               <Badge variant="outline">{item.dia}</Badge>
                                           </div>
                                       </TableCell>
