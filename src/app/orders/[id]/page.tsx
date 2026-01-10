@@ -60,7 +60,7 @@ export default async function OrderDetailsPage({
   const matrix = order.sizeColorMap as any[];
   const factories = await db.factory.findMany({ orderBy: { name: 'asc' } });
 
-  const tabTriggerClass = "data-[state=active]:bg-slate-100 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded-md px-4 py-2 transition-all";
+  const tabTriggerClass = "data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-full px-4 py-2 transition-all whitespace-nowrap text-sm font-medium border border-transparent data-[state=active]:border-slate-900 hover:bg-slate-100 shrink-0";
 
   return (
     <div className="space-y-6 pb-20">
@@ -90,7 +90,7 @@ export default async function OrderDetailsPage({
       <Tabs defaultValue={activeTab} className="w-full">
         
         {/* Simple Flex Container (Stable) */}
-        <TabsList className="w-full justify-start h-auto bg-white border p-1 mb-6 overflow-x-auto gap-1">
+        <TabsList className="flex w-full justify-start h-auto bg-slate-200 p-1 rounded-4xl gap-2 overflow-x-auto no-scrollbar flex-nowrap">
           
             <TabsTrigger value="overview" asChild className={tabTriggerClass}>
                 <Link href={`/orders/${id}?tab=overview`}>Overview</Link>
