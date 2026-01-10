@@ -63,7 +63,7 @@ export default async function OrderDetailsPage({
   const factories = await db.factory.findMany({ orderBy: { name: 'asc' } });
 
   // Mobile Friendly Tab Style (Added shrink-0)
-  const tabTriggerClass = "data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-full px-4 py-2 transition-all whitespace-nowrap text-sm font-medium border border-transparent data-[state=active]:border-slate-900 hover:bg-slate-100 shrink-0";
+  const tabTriggerClass = "data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-full px-4 py-2 transition-all whitespace-nowrap text-sm font-medium border border-transparent data-[state=active]:border-slate-900 hover:bg-slate-100";
 
   return (
     <div className="space-y-6 pb-20 overflow-x-hidden w-full">
