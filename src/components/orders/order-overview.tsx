@@ -95,7 +95,7 @@ export function OrderOverview({ order }: { order: any }) {
           </CardHeader>
           <CardContent className="p-0">
             <div className={`text-xl sm:text-2xl font-bold truncate tracking-tight ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {cost > 0 ? `$${profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "-"}
+              {cost > 0 ? `$${profit.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "-"}
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 mt-1 truncate">
               {cost > 0 ? `${marginPercent.toFixed(1)}% Margin` : "No Costing"}
