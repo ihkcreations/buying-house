@@ -15,7 +15,7 @@ export default async function CommercialOrderPage({
     params,
     searchParams 
 }: { 
-    params: { id: string },
+    params: Promise<{ id: string }>,
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   await protectPage(["admin", "commercial"]);
