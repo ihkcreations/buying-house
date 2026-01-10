@@ -16,7 +16,6 @@ import { OrderOverview } from "@/components/orders/order-overview";
 import { QuantityMatrix } from "@/components/orders/quantity-matrix";
 import { TechPackManager } from "@/components/orders/tech-pack-manager";
 
-// --- HELPER: Status Badge ---
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "PENDING": return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
@@ -39,10 +38,9 @@ export default async function OrderDetailsPage({
   const { id } = await params;
   const sp = await searchParams;
   
-  // 1. Determine Active Tab (Default to 'overview')
+  // 1. Determine Active Tab
   const activeTab = (sp.tab as string) || "overview";
 
-  // 2. Fetch Data
   const order = await db.order.findUnique({
     where: { id },
     include: { 
@@ -52,7 +50,6 @@ export default async function OrderDetailsPage({
         fabricBookings: true,
         productionLogs: true,
         actualCosting: true,
-        // commercialDocs: true
     },
   });
 
@@ -62,13 +59,13 @@ export default async function OrderDetailsPage({
   const matrix = order.sizeColorMap as any[];
   const factories = await db.factory.findMany({ orderBy: { name: 'asc' } });
 
-  // Mobile Friendly Tab Style (Added shrink-0)
-  const tabTriggerClass = "data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-full px-4 py-2 transition-all whitespace-nowrap text-sm font-medium border border-transparent data-[state=active]:border-slate-900 hover:bg-slate-100";
+  // CSS: Added 'w-auto' to ensure buttons have width
+  const tabTriggerClass = "data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-full px-4 py-2 transition-all whitespace-nowrap text-sm font-medium border border-transparent data-[state=active]:border-slate-900 hover:bg-slate-100 shrink-0 w-auto";
 
   return (
     <div className="space-y-6 pb-20 overflow-x-hidden w-full">
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between bg-white p-4 md:p-6 rounded-lg border shadow-sm">
         <div className="flex items-start gap-4">
           <Link href="/orders/ongoing">
@@ -92,41 +89,44 @@ export default async function OrderDetailsPage({
         </div>
       </div>
 
-      {/* --- STICKY TABS --- */}
-      <Tabs defaultValue={activeTab} className="w-full">
+      {/* --- TABS --- */}
+      {/* 
+          CRITICAL FIX: 
+          Changed 'defaultValue' to 'value'. 
+          This forces the Tabs component to sync with the URL 'activeTab' variable.
+      */}
+      <Tabs value={activeTab} className="w-full">
         
-        {/* CSS FIX: w-full parent + flex + overflow-x-auto on parent */}
         <div className="sticky top-16 z-30 bg-slate-50 pt-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 border-b border-slate-200 overflow-x-auto no-scrollbar">
-            <TabsList className="flex w-max min-w-full justify-start h-auto bg-transparent p-0 gap-2">
+            <TabsList className="inline-flex h-auto w-auto bg-transparent p-0 gap-2 justify-start">
             
-            <TabsTrigger value="overview" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=overview`}>Overview</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="costing" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=costing`}>Costing Sheet</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="tna" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=tna`}>T&A Plan</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="fabric" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=fabric`}>Fabric Booking</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="production" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=production`}>Production</Link>
-            </TabsTrigger>
+                <TabsTrigger value="overview" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=overview`}>Overview</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="costing" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=costing`}>Costing</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="tna" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=tna`}>T&A</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="fabric" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=fabric`}>Fabric</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="production" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=production`}>Production</Link>
+                </TabsTrigger>
 
-            <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=ocs`}>Post Costing (OCS)</Link>
-            </TabsTrigger>
+                <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=ocs`}>OCS (Audit)</Link>
+                </TabsTrigger>
 
             </TabsList>
         </div>
 
-        {/* --- CONTENT --- */}
         <div className="mt-4">
             <TabsContent value="overview" className="space-y-6">
                 <OrderOverview order={order} />
