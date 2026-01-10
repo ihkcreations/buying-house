@@ -107,7 +107,7 @@ export default async function OrderDetailsPage({
                 <Link href={`/orders/${id}?tab=costing`}>Costing Sheet</Link>
             </TabsTrigger>
             
-            {/* <TabsTrigger value="tna" asChild className={tabTriggerClass}>
+            <TabsTrigger value="tna" asChild className={tabTriggerClass}>
                 <Link href={`/orders/${id}?tab=tna`}>T&A Plan</Link>
             </TabsTrigger>
             
@@ -121,7 +121,7 @@ export default async function OrderDetailsPage({
 
             <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
                 <Link href={`/orders/${id}?tab=ocs`}>Post Costing (OCS)</Link>
-            </TabsTrigger> */}
+            </TabsTrigger>
 
             </TabsList>
         </div>
