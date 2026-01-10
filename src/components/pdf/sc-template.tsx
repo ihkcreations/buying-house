@@ -200,7 +200,7 @@ export const SCDocument = ({
               </Text>
               <Text style={[styles.cell, styles.c2]}>{item.description}</Text>
               <Text style={[styles.cell, styles.c3]}>
-                {item.article || "Free"}
+                {item.article || ""}
               </Text>
               <Text style={[styles.cell, styles.c4]}>
                 {item.qty.toLocaleString()}
