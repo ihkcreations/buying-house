@@ -92,33 +92,36 @@ export default async function OrderDetailsPage({
       <Tabs defaultValue={activeTab} className="w-full">
         
         {/* Simple Flex Container (Stable) */}
-        <TabsList className="flex w-full justify-start h-auto bg-slate-200 p-1 rounded-4xl gap-2 overflow-x-auto no-scrollbar flex-nowrap">
-          
-            <TabsTrigger value="overview" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=overview`}>Overview</Link>
-            </TabsTrigger>
+        <div className="sticky top-16 z-30 bg-slate-50 pt-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 border-b border-slate-200 overflow-x-auto no-scrollbar">
+            <TabsList className="inline-flex h-auto w-auto bg-transparent p-0 gap-2 justify-start">
             
-            <TabsTrigger value="costing" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=costing`}>Costing Sheet</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="tna" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=tna`}>T&A Plan</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="fabric" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=fabric`}>Fabric Booking</Link>
-            </TabsTrigger>
-            
-            <TabsTrigger value="production" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=production`}>Production</Link>
-            </TabsTrigger>
+                <TabsTrigger value="overview" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=overview`}>Overview</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="costing" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=costing`}>Costing Sheet</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="tna" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=tna`}>T&A Plan</Link>
+                </TabsTrigger>
+                
+                {/* Ensure this line exists! */}
+                <TabsTrigger value="fabric" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=fabric`}>Fabric Booking</Link>
+                </TabsTrigger>
+                
+                <TabsTrigger value="production" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=production`}>Production</Link>
+                </TabsTrigger>
 
-            <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
-                <Link href={`/orders/${id}?tab=ocs`}>Post Costing (OCS)</Link>
-            </TabsTrigger>
+                <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
+                    <Link href={`/orders/${id}?tab=ocs`}>Post Costing (OCS)</Link>
+                </TabsTrigger>
 
-        </TabsList>
+            </TabsList>
+        </div>
 
         {/* --- CONTENT --- */}
         <TabsContent value="overview" className="space-y-6">
