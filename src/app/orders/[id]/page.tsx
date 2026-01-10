@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import utility for class merging
 
 // Import modules
 import { CostingForm } from "@/components/orders/costing-form";
@@ -16,6 +16,7 @@ import { OrderOverview } from "@/components/orders/order-overview";
 import { QuantityMatrix } from "@/components/orders/quantity-matrix";
 import { TechPackManager } from "@/components/orders/tech-pack-manager";
 
+// --- HELPER: Status Badge ---
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "PENDING": return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
@@ -28,6 +29,16 @@ const getStatusBadge = (status: string) => {
   }
 };
 
+// --- CONFIG: Define Tabs Here ---
+const ORDER_TABS = [
+    { key: "overview", label: "Overview" },
+    { key: "costing", label: "Costing Sheet" },
+    { key: "tna", label: "T&A Plan" },
+    { key: "fabric", label: "Fabric Booking" },
+    { key: "production", label: "Production" },
+    { key: "ocs", label: "Post Costing (OCS)" },
+];
+
 export default async function OrderDetailsPage({ 
     params, 
     searchParams 
@@ -38,9 +49,10 @@ export default async function OrderDetailsPage({
   const { id } = await params;
   const sp = await searchParams;
   
-  // 1. Determine Active Tab
+  // 1. Determine Active Tab (Default to 'overview')
   const activeTab = (sp.tab as string) || "overview";
 
+  // 2. Fetch Data
   const order = await db.order.findUnique({
     where: { id },
     include: { 
@@ -59,13 +71,10 @@ export default async function OrderDetailsPage({
   const matrix = order.sizeColorMap as any[];
   const factories = await db.factory.findMany({ orderBy: { name: 'asc' } });
 
-  // CSS: Added 'w-auto' to ensure buttons have width
-  const tabTriggerClass = "data-[state=active]:bg-slate-900 data-[state=active]:text-white rounded-full px-4 py-2 transition-all whitespace-nowrap text-sm font-medium border border-transparent data-[state=active]:border-slate-900 hover:bg-slate-100 shrink-0 w-auto";
-
   return (
     <div className="space-y-6 pb-20 overflow-x-hidden w-full">
       
-      {/* HEADER */}
+      {/* --- HEADER --- */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between bg-white p-4 md:p-6 rounded-lg border shadow-sm">
         <div className="flex items-start gap-4">
           <Link href="/orders/ongoing">
@@ -89,77 +98,73 @@ export default async function OrderDetailsPage({
         </div>
       </div>
 
-      {/* --- TABS --- */}
-      {/* 
-          CRITICAL FIX: 
-          Changed 'defaultValue' to 'value'. 
-          This forces the Tabs component to sync with the URL 'activeTab' variable.
-      */}
-      <Tabs value={activeTab} className="w-full">
-        
-        <div className="sticky top-16 z-30 bg-slate-50 pt-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 border-b border-slate-200 overflow-x-auto no-scrollbar">
-            <TabsList className="inline-flex h-auto w-auto bg-transparent p-0 gap-2 justify-start">
-            
-                <TabsTrigger value="overview" asChild className={tabTriggerClass}>
-                    <Link href={`/orders/${id}?tab=overview`}>Overview</Link>
-                </TabsTrigger>
-                
-                <TabsTrigger value="costing" asChild className={tabTriggerClass}>
-                    <Link href={`/orders/${id}?tab=costing`}>Costing</Link>
-                </TabsTrigger>
-                
-                <TabsTrigger value="tna" asChild className={tabTriggerClass}>
-                    <Link href={`/orders/${id}?tab=tna`}>T&A</Link>
-                </TabsTrigger>
-                
-                <TabsTrigger value="fabric" asChild className={tabTriggerClass}>
-                    <Link href={`/orders/${id}?tab=fabric`}>Fabric</Link>
-                </TabsTrigger>
-                
-                <TabsTrigger value="production" asChild className={tabTriggerClass}>
-                    <Link href={`/orders/${id}?tab=production`}>Production</Link>
-                </TabsTrigger>
+      {/* --- CUSTOM NAVIGATION BAR (Replaces Tabs) --- */}
+      <div className="sticky top-16 z-30 bg-slate-50 pt-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 border-b border-slate-200">
+          <div className="flex w-full overflow-x-auto no-scrollbar gap-2">
+              {ORDER_TABS.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  return (
+                      <Link key={tab.key} href={`/orders/${id}?tab=${tab.key}`}>
+                          <div className={cn(
+                              "rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors border",
+                              isActive 
+                                ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                                : "bg-transparent text-slate-600 border-transparent hover:bg-slate-200 hover:text-slate-900"
+                          )}>
+                              {tab.label}
+                          </div>
+                      </Link>
+                  );
+              })}
+          </div>
+      </div>
 
-                <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
-                    <Link href={`/orders/${id}?tab=ocs`}>OCS (Audit)</Link>
-                </TabsTrigger>
+      {/* --- CONTENT RENDERER (Conditional) --- */}
+      <div className="mt-4">
+          
+          {activeTab === "overview" && (
+              <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+                  <OrderOverview order={order} />
+                  <TechPackManager orderId={order.id} initialUrls={order.techPackUrls} />
+                  <QuantityMatrix matrix={matrix} totalQty={order.orderQty} />
+              </div>
+          )}
 
-            </TabsList>
-        </div>
+          {activeTab === "costing" && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                  <CostingForm orderId={order.id} initialData={order.costing} orderFob={order.unitPrice} />
+              </div>
+          )}
 
-        <div className="mt-4">
-            <TabsContent value="overview" className="space-y-6">
-                <OrderOverview order={order} />
-                <TechPackManager orderId={order.id} initialUrls={order.techPackUrls} />
-                <QuantityMatrix matrix={matrix} totalQty={order.orderQty} />
-            </TabsContent>
+          {activeTab === "tna" && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                  <TNAForm orderId={order.id} initialData={order.timeAction} />
+              </div>
+          )}
 
-            <TabsContent value="costing">
-                <CostingForm orderId={order.id} initialData={order.costing} orderFob={order.unitPrice} />
-            </TabsContent>
+          {activeTab === "fabric" && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                  <FabricBooking orderId={order.id} orderQty={order.orderQty} matrix={order.sizeColorMap} bookings={order.fabricBookings} factories={factories} />
+              </div>
+          )}
 
-            <TabsContent value="tna">
-                <TNAForm orderId={order.id} initialData={order.timeAction} />
-            </TabsContent>
+          {activeTab === "production" && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                  <ProductionLog orderId={order.id} orderQty={order.orderQty} logs={productionLogs} />
+              </div>
+          )}
 
-            <TabsContent value="fabric">
-                <FabricBooking orderId={order.id} orderQty={order.orderQty} matrix={order.sizeColorMap} bookings={order.fabricBookings} factories={factories} />
-            </TabsContent>
+          {activeTab === "ocs" && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                  {order.costing ? (
+                      <OCSForm orderId={order.id} budgetPerDzn={order.costing} actuals={order.actualCosting} orderQty={order.orderQty} totalRevenue={order.totalValue} />
+                  ) : (
+                      <div className="p-8 text-center text-slate-500 bg-white border rounded-lg shadow-sm">Please approve Costing Sheet first.</div>
+                  )}
+              </div>
+          )}
 
-            <TabsContent value="production">
-                <ProductionLog orderId={order.id} orderQty={order.orderQty} logs={productionLogs} />
-            </TabsContent>
-
-            <TabsContent value="ocs">
-                {order.costing ? (
-                    <OCSForm orderId={order.id} budgetPerDzn={order.costing} actuals={order.actualCosting} orderQty={order.orderQty} totalRevenue={order.totalValue} />
-                ) : (
-                    <div className="p-8 text-center text-slate-500 bg-white border rounded-lg shadow-sm">Please approve Costing Sheet first.</div>
-                )}
-            </TabsContent>
-        </div>
-
-      </Tabs>
+      </div>
     </div>
   );
 }
