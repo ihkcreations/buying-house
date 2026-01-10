@@ -172,7 +172,7 @@ and documents received DATE” on the AWB. This applies to Purchase Orders place
             <div className="flex flex-col">
               <Input
                 name="scNumber"
-                defaultValue={sc?.scNumber || `INO/PIO/${order.orderNo}`}
+                defaultValue={sc?.scNumber || `SC-${order.orderNo}`}
                 className="w-48 font-mono font-bold bg-white"
                 placeholder="SC Number"
               />
@@ -286,7 +286,7 @@ and documents received DATE” on the AWB. This applies to Purchase Orders place
                   </TableCell>
                   <TableCell className="text-sm">{item.description}</TableCell>
                   <TableCell className="text-xs">
-                    {item.article || "Free"}
+                    {item.article || ""}
                   </TableCell>
                   <TableCell className="text-right">
                     {item.qty.toLocaleString()}

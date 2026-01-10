@@ -88,6 +88,8 @@ const styles = StyleSheet.create({
   termItem: { flexDirection: "row", marginBottom: 2 },
   termKey: { fontWeight: "bold", fontSize: 6, },
 
+  normalText: { fontSize: 6, },
+
   // Long Text Blocks
   blockText: {
     marginTop: 5,
@@ -255,59 +257,59 @@ export const SCDocument = ({
 
         <View style={styles.termItem}>
           <Text style={styles.termKey}>TERMS OF DELIVERY : </Text>
-          <Text>&quot;{sc?.deliveryTerm}&quot;</Text>
+          <Text style={styles.normalText}>&quot;{sc?.deliveryTerm}&quot;</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>MODE OF SHIPMENT : </Text>
-          <Text>{sc?.shipmentMode}</Text>
+          <Text style={styles.normalText}>{sc?.shipmentMode}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>PAYMENT TERM : </Text>
-          <Text>{sc?.paymentTerm}</Text>
+          <Text style={styles.normalText}>{sc?.paymentTerm}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>TOLERANCE : </Text>
-          <Text>{sc?.tolerance}</Text>
+          <Text style={styles.normalText}>{sc?.tolerance}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>PARTIAL SHIPMENT : </Text>
-          <Text>{sc?.partialShipment}</Text>
+          <Text style={styles.normalText}>{sc?.partialShipment}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>TRANS SHIPMENT :</Text>
-          <Text>{sc?.transShipment}</Text>
+          <Text style={styles.normalText}>{sc?.transShipment}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>PORT OF DISCHARGE : </Text>
-          <Text>{sc?.portDischarge}</Text>
+          <Text style={styles.normalText}>{sc?.portDischarge}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>PORT OF DELIVERY : </Text>
-          <Text>{sc?.finalDest}</Text>
+          <Text style={styles.normalText}>{sc?.finalDest}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>PORT OF LOADING : </Text>
-          <Text>{sc?.portLoading}</Text>
+          <Text style={styles.normalText}>{sc?.portLoading}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>LATEST DATE OF SHIPMENT : </Text>
-          <Text>{sc?.latestShipDate}</Text>
+          <Text style={styles.normalText}>{sc?.latestShipDate}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>DATE AND PLACE OF EXPIRY : </Text>
-          <Text>{sc?.expiryDate}</Text>
+          <Text style={styles.normalText}>{sc?.expiryDate}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>NEGOTIATING BANK : </Text>
-          <Text>{sc?.negotiatingBank}</Text>
+          <Text style={styles.normalText}>{sc?.negotiatingBank}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>INSURANCE : </Text>
-          <Text>{sc?.insurance}</Text>
+          <Text style={styles.normalText}>{sc?.insurance}</Text>
         </View>
         <View style={styles.termItem}>
           <Text style={styles.termKey}>SPECIAL CONDITION : </Text>
-          <Text>{sc?.specialCondition}</Text>
+          <Text style={styles.normalText}>{sc?.specialCondition}</Text>
         </View>
         <Text style={{ fontWeight: "bold", marginTop: 8, fontSize: 7 }}>
           DOCUMENTS REQUIRED:

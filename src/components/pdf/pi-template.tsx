@@ -136,8 +136,8 @@ export const PIDocument = ({ order, pi, settings }: { order: any, pi: any, setti
                 <Text style={[styles.cell, styles.c4]}>Description</Text>
                 <Text style={[styles.cell, styles.c5]}>Ship Date</Text>
                 <Text style={[styles.cell, styles.c6]}>Qty</Text>
-                <Text style={[styles.cell, styles.c7]}>Rate</Text>
-                <Text style={[styles.cell, styles.c8]}>Amount</Text>
+                <Text style={[styles.cell, styles.c7]}>Rate ($/piece)</Text>
+                <Text style={[styles.cell, styles.c8]}>Amount ($)</Text>
             </View>
 
             {items.map((item: any, i: number) => (

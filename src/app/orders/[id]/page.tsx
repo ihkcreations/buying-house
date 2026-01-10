@@ -96,6 +96,8 @@ export default async function OrderDetailsPage({
 
   if (!order) return notFound();
 
+  const productionLogs = order.productionLogs || [];
+
   const matrix = order.sizeColorMap as any[];
   const allSizes = Array.from(
     new Set(matrix.flatMap((row) => Object.keys(row.sizes)))
@@ -158,29 +160,25 @@ export default async function OrderDetailsPage({
             <Link href={`/orders/${id}?tab=fabric`}>Fabric Booking</Link>
           </TabsTrigger>
 
-          <TabsTrigger value="production" asChild className={tabTriggerClass}>
+          {/* <TabsTrigger value="production" asChild className={tabTriggerClass}>
             <Link href={`/orders/${id}?tab=production`}>Productions</Link>
-          </TabsTrigger>
+          </TabsTrigger> */}
 
           <TabsTrigger value="ocs" asChild className={tabTriggerClass}>
-            <Link href={`/orders/${id}?tab=ocs`}>Post Costing (OCS)</Link>
+            <Link href={`/orders/${id}?tab=ocs`}>Post Costing Sheet (OCS)</Link>
+          </TabsTrigger>
+
+          <TabsTrigger value="production" asChild className={tabTriggerClass}>
+            <Link href={`/orders/${id}?tab=production`}>Productions</Link>
           </TabsTrigger>
         </TabsList>
 
         {/* --- TAB CONTENT --- */}
 
         <TabsContent value="overview" className="space-y-6">
-            
-            {/* The Dashboard */}
             <OrderOverview order={order} />
-            
-            {/* 1. TECH PACK MANAGER (NEW) */}
-            {/* Can be viewed/edited by Admin & Merchandiser */}
             <TechPackManager orderId={order.id} initialUrls={order.techPackUrls} />
-
-            {/* 2. The Matrix View */}
             <QuantityMatrix matrix={order.sizeColorMap as any[]} totalQty={order.orderQty} />
-
         </TabsContent>
 
         <TabsContent value="costing">
@@ -205,13 +203,13 @@ export default async function OrderDetailsPage({
           />
         </TabsContent>
 
-        <TabsContent value="production">
+        {/* <TabsContent value="production">
           <ProductionLog
             orderId={order.id}
             orderQty={order.orderQty}
-            logs={order.productionLogs}
+            logs={productionLogs}
           />
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="ocs">
           {order.costing ? (
@@ -227,6 +225,14 @@ export default async function OrderDetailsPage({
               Please approve Costing Sheet first.
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="production">
+          <ProductionLog
+            orderId={order.id}
+            orderQty={order.orderQty}
+            logs={productionLogs}
+          />
         </TabsContent>
       </Tabs>
     </div>

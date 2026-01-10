@@ -65,7 +65,7 @@ export async function savePI(orderId: string, formData: FormData) {
       create: {
         orderId,
         ...payload,
-        ...(existingPI ? {} : { piGenerationCount: 1 })      // Spread the flat object directly
+        ...(existingPI ? {} : { generationCount: 1 })      // Spread the flat object directly
       },
     });
 

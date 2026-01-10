@@ -65,7 +65,7 @@ export function PIGenerator({
   const initialRow = {
       styleOrder: `${order.styleNo} / ${order.orderNo}`,
       article: "", 
-      description: `Men's 100% Cotton Knitted ${order.styleNo}`, 
+      description: `${order.season} ${order.styleNo}`, 
       shippingDate: format(new Date(new Date().setDate(new Date().getDate() + 45)), "yyyy-MM-dd"), 
       qty: order.orderQty,
       rate: order.unitPrice,
@@ -202,8 +202,8 @@ export function PIGenerator({
                           <TableHead className="w-[300px]">Description</TableHead> 
                           <TableHead className="w-[130px]">Shipping Date</TableHead>
                           <TableHead className="w-[100px] text-right">Qty</TableHead>
-                          <TableHead className="w-[100px] text-right">Rate</TableHead>
-                          <TableHead className="w-[120px] text-right">Total</TableHead>
+                          <TableHead className="w-[100px] text-right">Rate ($/piece)</TableHead>
+                          <TableHead className="w-[120px] text-right">Total ($)</TableHead>
                           <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                   </TableHeader>
