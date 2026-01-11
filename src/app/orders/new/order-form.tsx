@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UploadDropzone } from "@/utils/uploadthing";
 import Link from "next/link";
 
-export function OrderForm({ buyers }: { buyers: any[] }) {
+export function OrderForm({ buyers, suggestedOrderNo }: { buyers: any[]; suggestedOrderNo: string }) {
   const [isLoading, setIsLoading] = useState(false);
   
   // State
@@ -20,7 +20,7 @@ export function OrderForm({ buyers }: { buyers: any[] }) {
   const [sizes, setSizes] = useState<string[]>(["S", "M", "L", "XL"]);
   const [colors, setColors] = useState<string[]>(["Black", "White", "Navy"]);
   const [matrix, setMatrix] = useState<Record<string, number>>({});
-  const [formData, setFormData] = useState({ orderNo: "", styleNo: "", season: "", buyerId: "", unitPrice: 0 });
+  const [formData, setFormData] = useState({ orderNo: suggestedOrderNo, styleNo: "", season: "", buyerId: "", unitPrice: 0 });
 
   // Calculations
   const totalQty = colors.reduce((acc, color) => {
@@ -71,9 +71,9 @@ export function OrderForm({ buyers }: { buyers: any[] }) {
       <Card>
         <CardHeader><CardTitle>Order Details</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-           <div className="space-y-2"><Label>Order Number</Label><Input required onChange={(e) => setFormData({...formData, orderNo: e.target.value})} /></div>
-           <div className="space-y-2"><Label>Style Number</Label><Input required onChange={(e) => setFormData({...formData, styleNo: e.target.value})} /></div>
-           <div className="space-y-2"><Label>Season</Label><Input required onChange={(e) => setFormData({...formData, season: e.target.value})} /></div>
+             <div className="space-y-2"><Label>Order Number</Label><Input required placeholder="e.g., ORD-2026-001" value={formData.orderNo} onChange={(e) => setFormData({...formData, orderNo: e.target.value})} /></div>
+             <div className="space-y-2"><Label>Style Number</Label><Input required placeholder="e.g., STY-2026-A123" onChange={(e) => setFormData({...formData, styleNo: e.target.value})} /></div>
+             <div className="space-y-2"><Label>Season</Label><Input required placeholder="e.g., Men's Pique Polo" onChange={(e) => setFormData({...formData, season: e.target.value})} /></div>
            <div className="space-y-2"><Label>Buyer</Label>
              <Select onValueChange={(val) => setFormData({...formData, buyerId: val})}>
                 <SelectTrigger><SelectValue placeholder="Select Buyer" /></SelectTrigger>
@@ -105,7 +105,7 @@ export function OrderForm({ buyers }: { buyers: any[] }) {
                 onUploadError={(e) => {toast.error(e.message)}}
                 appearance={{
                     container: "border-2 border-dashed bg-slate-50 p-6 w-full",
-                    button: "bg-slate-900 w-full md:w-auto" // Full width button on mobile
+                    button: "bg-slate-900 w-full p-1 md:w-auto" // Full width button on mobile
                 }}
             />
         </CardContent>

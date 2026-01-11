@@ -5,7 +5,7 @@ import { FinanceDashboard } from "@/components/finance/finance-dashboard";
 export default async function BusinessOverviewPage() {
   await protectPage(["admin", "super_admin"]);
 
-  // 1. Fetch Completed Orders (Revenue) with Buyer Name
+  // 1. Fetch Completed Orders (Revenue)
   const orders = await db.order.findMany({
     where: { status: { in: ["SHIPPED", "CLOSED", "OCS_FINALIZED"] } },
     select: { 
@@ -24,21 +24,43 @@ export default async function BusinessOverviewPage() {
     orderBy: { date: 'desc' }
   });
 
-  // --- DATA PROCESSING ---
+  // 3. Fetch Global Settings for Fallback Rate
+  const settings = await db.companySettings.findUnique({
+      where: { id: "main_settings" },
+      select: { manualExchangeRate: true }
+  });
   
-  // A. Calculate Exchange Rate Helper
-  const getUsd = (amount: number, currency: string, rate: number) => {
-      if (currency === "USD") return amount;
-      const r = rate > 0 ? rate : 120; // Fallback
-      return amount / r;
+  // Use Admin's Manual Rate or default to 120
+  const GLOBAL_USD_RATE = settings?.manualExchangeRate || 120;
+
+  // --- HELPER: Convert Any Amount to USD ---
+  const convertToUsd = (amount: number, currency: string) => {
+      if (currency === "USD") {
+          return amount;
+      } else {
+          // It is BDT. We divide by the Rate (e.g. 120) to get USD.
+          return amount / GLOBAL_USD_RATE;
+      }
   };
 
-  // B. Monthly P&L Data
+  // --- DATA PROCESSING ---
+
+  // A. Totals
+  const revenueTotal = orders.reduce((sum, o) => sum + o.totalValue, 0);
+  
+  const expenseTotal = expenses.reduce((sum, e) => {
+      return sum + convertToUsd(e.amount, e.currency);
+  }, 0);
+
+  const netIncome = revenueTotal - expenseTotal;
+  const netMargin = revenueTotal > 0 ? (netIncome / revenueTotal) * 100 : 0;
+
+  // B. Monthly P&L
   const monthlyData = new Array(12).fill(0).map((_, i) => ({
     name: new Date(0, i).toLocaleString('en-US', { month: 'short' }),
     income: 0,
     expense: 0,
-    profit: 0 // Net for the month
+    profit: 0
   }));
 
   orders.forEach(o => {
@@ -48,22 +70,16 @@ export default async function BusinessOverviewPage() {
 
   expenses.forEach(e => {
       const m = new Date(e.date).getMonth();
-      const val = getUsd(e.amount, e.currency, e.exchangeRate);
+      const val = convertToUsd(e.amount, e.currency);
       monthlyData[m].expense += val;
   });
 
-  // Calculate Net Profit per Month for the Line Chart
+  // Calc Net per month
   monthlyData.forEach(m => {
       m.profit = m.income - m.expense;
   });
 
-  // C. Totals for Cards
-  const revenueTotal = orders.reduce((sum, o) => sum + o.totalValue, 0);
-  const expenseTotal = expenses.reduce((sum, e) => sum + getUsd(e.amount, e.currency, e.exchangeRate), 0);
-  const netIncome = revenueTotal - expenseTotal;
-  const netMargin = revenueTotal > 0 ? (netIncome / revenueTotal) * 100 : 0;
-
-  // D. Top Buyers (Revenue Source)
+  // C. Top Buyers
   const buyerMap: Record<string, number> = {};
   orders.forEach(o => {
       buyerMap[o.buyer.name] = (buyerMap[o.buyer.name] || 0) + o.totalValue;
@@ -72,12 +88,12 @@ export default async function BusinessOverviewPage() {
   const buyerData = Object.keys(buyerMap)
     .map(key => ({ name: key, value: buyerMap[key] }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 5); // Top 5
+    .slice(0, 5);
 
-  // E. Expense Categories
+  // D. Expense Categories
   const catMap: Record<string, number> = {};
   expenses.forEach(e => {
-      const val = getUsd(e.amount, e.currency, e.exchangeRate);
+      const val = convertToUsd(e.amount, e.currency);
       catMap[e.category] = (catMap[e.category] || 0) + val;
   });
   
@@ -87,10 +103,10 @@ export default async function BusinessOverviewPage() {
   }));
 
   const summary = {
-      revenue: revenueTotal,
-      expenses: Math.round(expenseTotal),
-      net: Math.round(netIncome),
-      margin: netMargin.toFixed(1)
+      revenue: Math.round(revenueTotal * 1000) / 1000,
+      expenses: Math.round(expenseTotal * 1000) / 1000,
+      net: Math.round(netIncome * 1000) / 1000,
+      margin: netMargin.toFixed(2)
   };
 
   return (
