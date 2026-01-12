@@ -18,6 +18,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email, password, name, role } = body;
 
+    // --- NEW VALIDATION ---
+    if (!email.endsWith("@piocean.com")) {
+        return NextResponse.json({ error: "Email must end with @piocean.com" }, { status: 400 });
+    }
+    
+    if (email.includes(" ")) {
+        return NextResponse.json({ error: "Email cannot contain spaces." }, { status: 400 });
+    }
+
     // 2. HIERARCHY CHECK
     if (role === "admin" || role === "super_admin") {
         if (currentUserRole !== "super_admin") {
