@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { Plus, Trash2, AlertTriangle, KeyRound, Loader2, Shield, Calendar } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, KeyRound, Loader2, AtSign, Calendar } from "lucide-react";
 import { deleteUser, adminResetPassword } from "@/app/actions/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,40 +34,63 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Create State
+  // --- UPDATED STATE ---
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState(""); // Changed from 'email' to 'username'
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("merchandiser");
 
-  // Reset State
   const [resetUserId, setResetUserId] = useState<string | null>(null);
   const [newResetPass, setNewResetPass] = useState("");
   const [isResetting, setIsResetting] = useState(false);
 
-  // Handlers (Keep existing logic)
+  // --- HANDLER: CREATE USER ---
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 1. FRONTEND VALIDATION
+    if (username.includes(" ")) {
+        toast.error("Username cannot contain spaces.");
+        return;
+    }
+    if (username.includes("@")) {
+        toast.error("Please enter username only (without @piocean.com).");
+        return;
+    }
+
     setIsLoading(true);
+
+    // 2. CONSTRUCT EMAIL
+    const fullEmail = `${username.toLowerCase()}@piocean.com`;
+
     try {
       const response = await fetch("/api/admin/users", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name, role })
+          body: JSON.stringify({ email: fullEmail, password, name, role })
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      toast.success("User created!");
+
+      if (!response.ok) {
+          throw new Error(data.error || "Failed to create user");
+      }
+
+      toast.success("User created successfully!");
       setOpen(false);
-      setName(""); setEmail(""); setPassword("");
+      setName(""); setUsername(""); setPassword(""); setRole("merchandiser");
       router.refresh(); 
-    } catch (error: any) { toast.error(error.message); } 
-    finally { setIsLoading(false); }
+
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDelete = async (userId: string) => {
     const result = await deleteUser(userId);
-    if (result.success) { toast.success("Deleted"); router.refresh(); }
+    if (result.success) { toast.success(result.success); router.refresh(); }
     else toast.error(result.error);
   };
 
@@ -125,14 +148,38 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-800 w-full md:w-auto"><Plus className="mr-2 h-4 w-4" /> Create User</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"><Plus className="mr-2 h-4 w-4" /> Create User</Button>
           </DialogTrigger>
           <DialogContent className="w-[90%] rounded-lg">
             <DialogHeader><DialogTitle>New Team Member</DialogTitle></DialogHeader>
             <form onSubmit={handleCreateUser} className="space-y-4 mt-2">
-              <div className="space-y-2"><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
-              <div className="space-y-2"><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+              
+              <div className="space-y-2"><Label>Full Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="John Doe" /></div>
+              
+              {/* --- USERNAME INPUT (RESTRICTED) --- */}
+              <div className="space-y-2">
+                  <Label>Username</Label>
+                  <div className="flex items-center">
+                      <div className="relative flex-1">
+                          <AtSign className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                          <Input 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)} 
+                            required 
+                            placeholder="john.doe" 
+                            className="pl-9 rounded-r-none border-r-0 focus-visible:ring-0"
+                          />
+                      </div>
+                      <div className="h-10 flex items-center px-3 bg-slate-100 border border-slate-200 rounded-r-md text-sm text-slate-500 font-medium">
+                          @piocean.com
+                      </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500">Only letters, numbers, and dots allowed. No spaces.</p>
+              </div>
+              {/* ----------------------------------- */}
+
               <div className="space-y-2"><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} /></div>
+              
               <div className="space-y-2"><Label>Role</Label>
                 <Select value={role} onValueChange={setRole}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -144,7 +191,10 @@ export function UserList({ initialUsers }: { initialUsers: any[] }) {
                     </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full bg-slate-900" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : "Create"}</Button>
+              
+              <div className="flex justify-end pt-2">
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : "Create Account"}</Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
