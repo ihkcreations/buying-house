@@ -60,7 +60,7 @@ export function ExpenseForm({ orders, currentRate }: { orders: any[], currentRat
                 </Tabs>
                 {currency === "USD" && (
                     <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded">
-                        Rate: 1 USD = {currentRate} BDT
+                        Today's Rate: 1 USD = {currentRate} BDT
                     </span>
                 )}
             </div>
